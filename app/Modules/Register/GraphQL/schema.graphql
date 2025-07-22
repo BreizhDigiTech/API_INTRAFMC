@@ -1,0 +1,21 @@
+# Schéma GraphQL pour l'enregistrement
+
+extend type Mutation {
+  # Enregistrement utilisateur
+  register(
+    name: String!,
+    email: String!,
+    password: String!,
+    password_confirmation: String!,
+    avatar: String
+  ): AuthPayload @field(resolver: "App\\Modules\\Register\\GraphQL\\Mutations\\RegisterMutator@register")
+}
+
+type AuthPayload {
+  user: User!
+  token: String!
+}
+
+
+
+

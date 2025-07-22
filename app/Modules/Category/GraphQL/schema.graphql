@@ -1,0 +1,36 @@
+type Category {
+  id: ID!
+  name: String!
+  products: [ProductCBD!]!
+}
+
+extend type ProductCBD {
+  categories: [Category!]!
+}
+
+extend type Query {
+  categories: [Category!]! @guard(with: ["api"]) @field(resolver: "App\\Modules\\Category\\GraphQL\\Queries\\CategoryQuery@categories")
+  category(id: ID!): Category @guard(with: ["api"]) @field(resolver: "App\\Modules\\Category\\GraphQL\\Queries\\CategoryQuery@category")
+}
+
+extend type Mutation {
+  createCategory(name: String!): Category
+    @guard(with: ["api"])
+    @field(resolver: "App\\Modules\\Category\\GraphQL\\Mutations\\CategoryMutator@createCategory")
+
+  updateCategory(id: ID!, name: String!): Category
+    @guard(with: ["api"])
+    @field(resolver: "App\\Modules\\Category\\GraphQL\\Mutations\\CategoryMutator@updateCategory")
+
+  deleteCategory(id: ID!): Boolean
+    @guard(with: ["api"])
+    @field(resolver: "App\\Modules\\Category\\GraphQL\\Mutations\\CategoryMutator@deleteCategory")
+
+  attachCategoryToProduct(category_id: ID!, product_id: ID!): Category
+    @guard(with: ["api"])
+    @field(resolver: "App\\Modules\\Category\\GraphQL\\Mutations\\CategoryMutator@attachCategoryToProduct")
+
+  detachCategoryFromProduct(category_id: ID!, product_id: ID!): Category
+    @guard(with: ["api"])
+    @field(resolver: "App\\Modules\\Category\\GraphQL\\Mutations\\CategoryMutator@detachCategoryFromProduct")
+}

@@ -1,0 +1,84 @@
+extend type Query {
+    #
+    # Liste des utilisateurs (accessible uniquement par les administrateurs)
+    users(page: Int): UserPagination
+        @guard(with: ["api"])
+        @field(resolver: "App\\Modules\\User\\GraphQL\\Queries\\UserQuery@users")
+
+    # Récupère un utilisateur spécifique
+    user(id: ID!): User
+        @guard(with: ["api"])
+        @field(resolver: "App\\Modules\\User\\GraphQL\\Queries\\UserQuery@user")
+}
+
+extend type Mutation {
+    # Mise à jour des informations utilisateur (par un administrateur)
+    updateUser(
+        id: ID!,
+        name: String,
+        email: String,
+        is_active: Boolean,
+        is_admin: Boolean,
+        password: String,
+        password_confirmation: String
+    ): User
+        @guard(with: ["api"])
+        @field(resolver: "App\\Modules\\User\\GraphQL\\Mutations\\UserMutator@updateUser")
+
+    # Suppression d'un utilisateur (par un administrateur)
+    deleteUser(id: ID!): DeleteResponse
+        @guard(with: ["api"])
+        @field(resolver: "App\\Modules\\User\\GraphQL\\Mutations\\UserMutator@deleteUser")
+
+    # Mise à jour des informations personnelles (par l'utilisateur lui-même)
+    updateProfile(
+        id: ID!,
+        name: String,
+        email: String,
+        avatar: String
+    ): User
+        @guard(with: ["api"])
+        @field(resolver: "App\\Modules\\User\\GraphQL\\Mutations\\UserMutator@updateProfile")
+
+    # Changement de mot de passe (par l'utilisateur lui-même)
+    changePassword(
+        current_password: String!,
+        new_password: String!
+    ): ChangePasswordResponse
+        @guard(with: ["api"])
+        @field(resolver: "App\\Modules\\User\\GraphQL\\Mutations\\UserMutator@changePassword")
+}
+
+input UserFilterInput {
+    is_active: Boolean
+    is_admin: Boolean
+}
+
+type UserPagination {
+    data: [User]
+    pagination: Pagination
+}
+
+type DeleteResponse {
+    success: Boolean
+    message: String
+}
+
+type ChangePasswordResponse {
+    success: Boolean
+    message: String
+}
+
+type Pagination {
+    total: Int
+    per_page: Int
+    current_page: Int
+    last_page: Int
+    first_page_url: String
+    last_page_url: String
+    next_page_url: String
+    prev_page_url: String
+    path: String
+    from: Int
+    to: Int
+}

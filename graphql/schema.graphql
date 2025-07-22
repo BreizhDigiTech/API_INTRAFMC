@@ -1,0 +1,9 @@
+#import ./../app/Modules/Auth/GraphQL/schema.graphql
+#import ./../app/Modules/Register/GraphQL/schema.graphql
+#import ./../app/Modules/User/GraphQL/schema.graphql
+#import ./../app/Modules/Product_CBD/GraphQL/schema.graphql
+#import ./../app/Modules/Arrival/GraphQL/schema.graphql
+#import ./../app/Modules/Category/GraphQL/schema.graphql
+#import ./../app/Modules/Supplier/GraphQL/schema.graphql
+#import ./../app/Modules/Cart/GraphQL/schema.graphql
+#import ./../app/Modules/Order/GraphQL/schema.graphql

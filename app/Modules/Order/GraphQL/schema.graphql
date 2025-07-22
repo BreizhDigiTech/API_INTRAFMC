@@ -1,0 +1,39 @@
+type Order {
+  id: ID!
+  user: User!
+  total: Float!
+  status: String!
+  products: [OrderProduct!]!
+}
+
+type OrderProduct {
+  id: ID!
+  name: String!
+  price: Float!
+  pivot: OrderProductPivot
+}
+
+type OrderProductPivot {
+  quantity: Int!
+  unit_price: Float!
+}
+
+extend type Mutation {
+  checkout: Order
+    @guard
+    @field(resolver: "App\\Modules\\Order\\GraphQL\\Mutations\\OrderMutator@checkout")
+
+  cancelOrder(id: ID!): Boolean
+    @guard
+    @field(resolver: "App\\Modules\\Order\\GraphQL\\Mutations\\OrderMutator@cancelOrder")
+}
+
+extend type Query {
+  orders: [Order!]!
+    @guard
+    @field(resolver: "App\\Modules\\Order\\GraphQL\\Queries\\OrderQuery@orders")
+
+  order(id: ID!): Order
+    @guard
+    @field(resolver: "App\\Modules\\Order\\GraphQL\\Queries\\OrderQuery@order")
+}

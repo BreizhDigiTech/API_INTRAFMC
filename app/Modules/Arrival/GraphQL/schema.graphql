@@ -1,0 +1,71 @@
+extend type Mutation {
+  validateArrival(arrival_id: ID!): CbdArrival
+    @guard(with: ["api"])
+    @can(ability: "admin")
+    @field(resolver: "App\\Modules\\Arrival\\GraphQL\\Mutations\\ArrivalMutator@validateArrival")
+
+  createArrival(input: CreateArrivalInput!): CbdArrival
+    @guard(with: ["api"])
+    @can(ability: "admin")
+    @field(resolver: "App\\Modules\\Arrival\\GraphQL\\Mutations\\ArrivalMutator@createArrival")
+
+  updateArrival(arrival_id: ID!, input: UpdateArrivalInput!): CbdArrival
+    @guard(with: ["api"])
+    @can(ability: "admin")
+    @field(resolver: "App\\Modules\\Arrival\\GraphQL\\Mutations\\ArrivalMutator@updateArrival")
+
+  deleteArrival(arrival_id: ID!): CbdArrival
+    @guard(with: ["api"])
+    @can(ability: "admin")
+    @field(resolver: "App\\Modules\\Arrival\\GraphQL\\Mutations\\ArrivalMutator@deleteArrival")
+}
+
+extend type Query {
+  arrivals: [CbdArrival]
+    @guard(with: ["api"])
+    @field(resolver: "App\\Modules\\Arrival\\GraphQL\\Queries\\ArrivalQuery@arrivals")
+
+  arrival(arrival_id: ID!): CbdArrival
+    @guard(with: ["api"])
+    @field(resolver: "App\\Modules\\Arrival\\GraphQL\\Queries\\ArrivalQuery@arrival")
+}
+
+type CbdArrival {
+  id: ID!
+  amount: Float!
+  status: String!
+  products: [ArrivalProductCbd]
+}
+
+type ArrivalProductCbd {
+  id: ID!
+  arrival_id: ID!
+  product_id: ID!
+  quantity: Int!
+  unit_price: Float!
+  product: ProductCBD
+}
+
+input CreateArrivalInput {
+  amount: Float!
+  status: String!
+  products: [CreateArrivalProductInput!]!
+}
+
+input UpdateArrivalInput {
+  amount: Float
+  status: String
+  products: [UpdateArrivalProductInput!]
+}
+
+input CreateArrivalProductInput {
+  product_id: ID!
+  quantity: Int!
+  unit_price: Float!
+}
+
+input UpdateArrivalProductInput {
+  product_id: ID
+  quantity: Int
+  unit_price: Float
+}

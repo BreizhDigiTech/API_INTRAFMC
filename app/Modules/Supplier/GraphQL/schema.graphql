@@ -1,0 +1,30 @@
+type Supplier {
+  id: ID!
+  name: String!
+  email: String
+  phone: String
+  products: [ProductCBD!]!
+}
+
+extend type ProductCBD {
+  suppliers: [Supplier!]!
+}
+
+extend type Query {
+  suppliers: [Supplier!]! @guard(with: ["api"]) @field(resolver: "App\\Modules\\Supplier\\GraphQL\\Queries\\SupplierQuery@suppliers")
+  supplier(id: ID!): Supplier @guard(with: ["api"]) @field(resolver: "App\\Modules\\Supplier\\GraphQL\\Queries\\SupplierQuery@supplier")
+}
+
+extend type Mutation {
+  createSupplier(name: String!, email: String, phone: String): Supplier
+    @guard(with: ["api"])
+    @field(resolver: "App\\Modules\\Supplier\\GraphQL\\Mutations\\SupplierMutator@createSupplier")
+
+  attachSupplierToProduct(supplier_id: ID!, product_id: ID!): Supplier
+    @guard(with: ["api"])
+    @field(resolver: "App\\Modules\\Supplier\\GraphQL\\Mutations\\SupplierMutator@attachSupplierToProduct")
+
+  detachSupplierFromProduct(supplier_id: ID!, product_id: ID!): Supplier
+    @guard(with: ["api"])
+    @field(resolver: "App\\Modules\\Supplier\\GraphQL\\Mutations\\SupplierMutator@detachSupplierFromProduct")
+}

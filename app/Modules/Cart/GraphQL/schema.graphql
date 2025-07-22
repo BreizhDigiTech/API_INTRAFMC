@@ -1,0 +1,36 @@
+# Schéma GraphQL pour le module Cart
+
+type Cart {
+  id: ID!
+  user: User!
+  products: [CartProduct!]!
+}
+
+type CartProduct {
+  id: ID!
+  name: String!
+  price: Float!
+  quantity: Int! @method(name: "getCartQuantity")
+}
+
+extend type Query {
+  myCart: Cart @guard @field(resolver: "App\\Modules\\Cart\\GraphQL\\Queries\\CartQuery@myCart")
+}
+
+extend type Mutation {
+  addToCart(product_id: ID!, quantity: Int!): Cart
+    @guard
+    @field(resolver: "App\\Modules\\Cart\\GraphQL\\Mutations\\CartMutator@addToCart")
+
+  removeFromCart(product_id: ID!): Cart
+    @guard
+    @field(resolver: "App\\Modules\\Cart\\GraphQL\\Mutations\\CartMutator@removeFromCart")
+
+  clearCart: Cart
+    @guard
+    @field(resolver: "App\\Modules\\Cart\\GraphQL\\Mutations\\CartMutator@clearCart")
+
+  updateCartProductQuantity(product_id: ID!, quantity: Int!): Cart
+    @guard
+    @field(resolver: "App\\Modules\\Cart\\GraphQL\\Mutations\\CartMutator@updateCartProductQuantity")
+}

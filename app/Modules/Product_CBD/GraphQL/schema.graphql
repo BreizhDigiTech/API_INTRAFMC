@@ -1,0 +1,56 @@
+extend type Query {
+  products(page: Int, per_page: Int): ProductCBDPagination @field(resolver: "App\\Modules\\Product_CBD\\GraphQL\\Queries\\ProductCBDQuery@products")
+  product(id: ID!): ProductCBD @field(resolver: "App\\Modules\\Product_CBD\\GraphQL\\Queries\\ProductCBDQuery@product")
+}
+
+extend type Mutation {
+  createProduct(
+    name: String!,
+    description: String,
+    price: Float!,
+    images: [String],
+    stock: Int!,
+    analysis_file: Upload
+  ): ProductCBD 
+  @guard(with: ["api"]) 
+  @field(resolver: "App\\Modules\\Product_CBD\\GraphQL\\Mutations\\ProductCBDMutator@createProduct")
+
+  updateProduct(
+    id: ID!,
+    name: String,
+    description: String,
+    price: Float,
+    images: [String],
+    stock: Int,
+    analysis_file: Upload
+  ): ProductCBD 
+  @guard(with: ["api"])
+  @field(resolver: "App\\Modules\\Product_CBD\\GraphQL\\Mutations\\ProductCBDMutator@updateProduct")
+
+  deleteProduct(id: ID!): DeleteResponse
+    @guard(with: ["api"])
+    @field(resolver: "App\\Modules\\Product_CBD\\GraphQL\\Mutations\\ProductCBDMutator@deleteProduct")
+}
+
+type ProductCBD {
+  id: ID!
+  name: String!
+  description: String
+  price: Float!
+  images: [String]
+  stock: Int!
+  analysis_file: String # Fichier d'analyse (optionnel)
+  analysis_file_url: String # URL du fichier d'analyse
+  created_at: String
+  updated_at: String
+}
+
+type ProductCBDPagination {
+  data: [ProductCBD]
+  pagination: Pagination
+}
+
+type DeleteResponse {
+  success: Boolean
+  message: String
+}
