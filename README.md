@@ -8,21 +8,19 @@ Une API GraphQL construite avec Laravel et Lighthouse pour la gestion interne de
 - **Lighthouse GraphQL** - Serveur GraphQL pour Laravel
 - **JWT Auth** - Authentification par tokens JWT
 - **PHP 8.2+** - Version PHP requise
-- **Vite** - Build tool pour les assets
 
 ## 📋 Prérequis
 
 - PHP 8.2 ou supérieur
 - Composer
-- Node.js et npm
 - Base de données (MySQL/PostgreSQL/SQLite)
 
 ## 🛠️ Installation
 
 1. **Cloner le repository**
    ```bash
-   git clone https://github.com/BreizhDigiTech/Intra_FMC.git
-   cd Intra_FMC/api-graphql
+   git clone https://github.com/BreizhDigiTech/API_INTRAFMC.git
+   cd API_INTRAFMC
    ```
 
 2. **Installer les dépendances PHP**
@@ -30,18 +28,13 @@ Une API GraphQL construite avec Laravel et Lighthouse pour la gestion interne de
    composer install
    ```
 
-3. **Installer les dépendances Node.js**
-   ```bash
-   npm install
-   ```
-
-4. **Configuration de l'environnement**
+3. **Configuration de l'environnement**
    ```bash
    copy .env.example .env
    php artisan key:generate
    ```
 
-5. **Configurer la base de données**
+4. **Configurer la base de données**
    - Modifier le fichier `.env` avec vos paramètres de base de données
    ```env
    APP_NAME="Intra FMC API"
@@ -59,17 +52,17 @@ Une API GraphQL construite avec Laravel et Lighthouse pour la gestion interne de
    JWT_TTL=60
    ```
 
-6. **Exécuter les migrations**
+5. **Exécuter les migrations**
    ```bash
    php artisan migrate
    ```
 
-7. **Peupler la base de données (optionnel)**
+6. **Peupler la base de données (optionnel)**
    ```bash
    php artisan db:seed
    ```
 
-8. **Générer la clé JWT**
+7. **Générer la clé JWT**
    ```bash
    php artisan jwt:secret
    ```
@@ -83,19 +76,9 @@ Une API GraphQL construite avec Laravel et Lighthouse pour la gestion interne de
    php artisan serve
    ```
 
-2. **Compiler les assets (dans un autre terminal)**
-   ```bash
-   npm run dev
-   ```
-
 ### Production
 
-1. **Compiler les assets pour la production**
-   ```bash
-   npm run build
-   ```
-
-2. **Optimiser l'application**
+1. **Optimiser l'application**
    ```bash
    composer install --optimize-autoloader --no-dev
    php artisan config:cache
@@ -235,6 +218,7 @@ php artisan test --coverage
 
 1. **Sécurité**
    - [x] **CORS configuré** - Configuration CORS ajoutée pour les requêtes cross-origin
+   - [x] **Normalisation des fins de ligne** - Configuration `.gitattributes` et `.editorconfig` ajoutées
    - [ ] Ajouter une validation des entrées plus stricte
    - [ ] Implémenter la limitation de taux (rate limiting)
    - [ ] Ajouter la validation des tokens JWT
@@ -268,8 +252,6 @@ php artisan test --coverage
 ## 🔧 Scripts disponibles
 
 - `composer install` - Installer les dépendances PHP
-- `npm run dev` - Compiler les assets en mode développement
-- `npm run build` - Compiler les assets pour la production
 - `php artisan serve` - Démarrer le serveur de développement
 - `php artisan migrate` - Exécuter les migrations
 - `php artisan test` - Exécuter les tests
@@ -308,7 +290,7 @@ database/
 
 Ce projet est sous licence MIT.
 
-## � Fichiers recommandés à créer
+## 📝 Fichiers recommandés à créer
 
 Pour améliorer la qualité du projet, considérez l'ajout de ces fichiers :
 
@@ -318,6 +300,15 @@ Pour améliorer la qualité du projet, considérez l'ajout de ces fichiers :
 4. **Dockerfile** - Image Docker
 5. **.env.testing** - Configuration pour les tests
 6. **docs/** - Documentation détaillée de l'API
+
+## 📁 Fichiers de configuration présents
+
+Le projet inclut déjà plusieurs fichiers de configuration importants :
+
+- `.gitattributes` - Normalisation des fins de ligne et configuration Git
+- `.editorconfig` - Configuration de l'éditeur pour la cohérence du code
+- `.env.example` - Exemple de configuration d'environnement
+- `phpunit.xml` - Configuration des tests PHPUnit
 
 ## �📞 Support
 
