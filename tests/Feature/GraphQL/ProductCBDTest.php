@@ -98,7 +98,7 @@ class ProductCBDTest extends TestCase
         $this->assertGraphQLSuccess($response);
         $response->assertJsonPath('data.product.id', (string) $product->id);
         $response->assertJsonPath('data.product.name', $product->name);
-        $response->assertJsonPath('data.product.price', $product->price);
+        $response->assertJsonPath('data.product.price', (float) $product->price);
     }
 
     /**

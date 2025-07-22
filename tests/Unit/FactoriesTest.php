@@ -77,9 +77,9 @@ class FactoriesTest extends TestCase
         $this->assertNotNull($cart->user);
         $this->assertInstanceOf(User::class, $cart->user);
         
-        // Check that products were attached
-        $this->assertGreaterThan(0, $cart->products->count());
-        $this->assertInstanceOf(ProductCBD::class, $cart->products->first());
+        // Check that product was attached
+        $this->assertNotNull($cart->product);
+        $this->assertInstanceOf(ProductCBD::class, $cart->product);
     }
 
     /**
@@ -100,19 +100,20 @@ class FactoriesTest extends TestCase
         $this->assertTrue($product->categories->contains($category));
         $this->assertEquals('CBD Oils', $product->categories->first()->name);
         
-        // Create cart with specific user
+        // Create cart with specific user and product
         $user = User::factory()->create(['name' => 'John Doe']);
-        $cart = Cart::factory()->create(['user_id' => $user->id]);
-        
-        // Clear auto-attached products and attach our specific product
-        $cart->products()->detach();
-        $cart->products()->attach($product->id, ['quantity' => 3]);
+        $cart = Cart::factory()->create([
+            'user_id' => $user->id,
+            'product_id' => $product->id,
+            'quantity' => 3
+        ]);
         
         $this->assertEquals($user->id, $cart->user_id);
         $this->assertEquals('John Doe', $cart->user->name);
+        $this->assertEquals($product->id, $cart->product_id);
         
-        // Test the many-to-many relationship
-        $this->assertTrue($cart->products->contains($product));
-        $this->assertEquals(3, $cart->products->first()->pivot->quantity);
+        // Test the relationships
+        $this->assertEquals($product->id, $cart->product->id);
+        $this->assertEquals(3, $cart->quantity);
     }
 }

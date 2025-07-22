@@ -8,10 +8,7 @@
 #import ./../app/Modules/Cart/GraphQL/schema.graphql
 #import ./../app/Modules/Order/GraphQL/schema.graphql
 
-"A date string with format `Y-m-d`."
-scalar Date
-
-"A datetime string with format `Y-m-d H:i:s`."
+"A date string with format `Y-m-d H:i:s`."
 scalar DateTime
 
 type DeleteResponse {
