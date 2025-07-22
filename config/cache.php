@@ -77,6 +77,12 @@ return [
             'lock_connection' => env('REDIS_CACHE_LOCK_CONNECTION', 'default'),
         ],
 
+        // Cache spécialisé pour GraphQL
+        'graphql' => [
+            'driver' => 'array', // Pour les tests, utilise array au lieu de redis
+            'serialize' => false,
+        ],
+
         'dynamodb' => [
             'driver' => 'dynamodb',
             'key' => env('AWS_ACCESS_KEY_ID'),

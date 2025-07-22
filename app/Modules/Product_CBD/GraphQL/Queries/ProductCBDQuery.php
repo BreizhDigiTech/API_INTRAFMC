@@ -4,12 +4,20 @@ namespace App\Modules\Product_CBD\GraphQL\Queries;
 
 use App\Models\ProductCBD;
 use App\Modules\Product_CBD\Services\ProductCBDService;
+use App\Services\GraphQLCacheService;
 use App\Exceptions\CustomException;
 use Illuminate\Support\Facades\Gate;
 use App\Helpers\AuthHelper;
 
 class ProductCBDQuery
 {
+    protected $cacheService;
+
+    public function __construct(GraphQLCacheService $cacheService)
+    {
+        $this->cacheService = $cacheService;
+    }
+
     /**
      * Récupère la liste des produits CBD.
      *
@@ -23,9 +31,10 @@ class ProductCBDQuery
         $user = AuthHelper::ensureAuthenticated();
 
         try {
-            $products = app(ProductCBDService::class)->getProducts($args);
-            // Retourne directement ProductCBDPagination tel qu'attendu par le schéma GraphQL
-            return $products;
+            // Utilise le cache pour les produits avec filtres
+            return $this->cacheService->getCachedProducts($args, function() use ($args) {
+                return app(ProductCBDService::class)->getProducts($args);
+            });
         } catch (\Exception $e) {
             throw new CustomException('Erreur interne', 'Impossible de récupérer la liste des produits.');
         }
