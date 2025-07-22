@@ -7,6 +7,7 @@ use App\Modules\Product_CBD\Services\ProductCBDService;
 use Illuminate\Support\Facades\Gate;
 use App\Models\ProductCBD;
 use App\Helpers\AuthHelper;
+use Illuminate\Validation\Rule;
 
 class ProductCBDMutator
 {
@@ -34,9 +35,27 @@ class ProductCBDMutator
         }
 
         try {
-            $product = $this->service->createProduct($args);
-            // Retourne directement le produit tel qu'attendu par le schéma GraphQL
+            $input = $args['input'];
+            
+            // Validate input
+            $validator = validator($input, [
+                'name' => ['required', 'string', 'max:255', Rule::unique('cbd_products', 'name')],
+                'description' => ['nullable', 'string'],
+                'price' => ['required', 'numeric', 'min:0'],
+                'stock' => ['required', 'integer', 'min:0'],
+                'category_id' => ['nullable', 'exists:categories,id'],
+                'analysis_file' => ['nullable', 'string'],
+                'images' => ['nullable', 'array']
+            ]);
+
+            if ($validator->fails()) {
+                throw new \Illuminate\Validation\ValidationException($validator);
+            }
+            
+            $product = $this->service->createProduct($input);
             return $product;
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            throw $e;
         } catch (\Exception $e) {
             throw new CustomException('Erreur interne', 'Impossible de créer le produit.');
         }
@@ -60,9 +79,27 @@ class ProductCBDMutator
         }
 
         try {
-            $updatedProduct = $this->service->updateProduct($args, $args['id']);
-            // Retourne directement le produit mis à jour tel qu'attendu par le schéma GraphQL
+            $input = $args['input'];
+            
+            // Validate input for update
+            $validator = validator($input, [
+                'name' => ['sometimes', 'string', 'max:255', Rule::unique('cbd_products', 'name')->ignore($args['id'])],
+                'description' => ['nullable', 'string'],
+                'price' => ['sometimes', 'numeric', 'min:0'],
+                'stock' => ['sometimes', 'integer', 'min:0'],
+                'category_id' => ['nullable', 'exists:categories,id'],
+                'analysis_file' => ['nullable', 'string'],
+                'images' => ['nullable', 'array']
+            ]);
+
+            if ($validator->fails()) {
+                throw new \Illuminate\Validation\ValidationException($validator);
+            }
+            
+            $updatedProduct = $this->service->updateProduct($input, $args['id']);
             return $updatedProduct;
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            throw $e;
         } catch (\Exception $e) {
             throw new CustomException('Erreur interne', 'Impossible de modifier le produit.');
         }
@@ -88,8 +125,7 @@ class ProductCBDMutator
         try {
             $this->service->deleteProduct($args['id']);
             return [
-                'success' => true,
-                'message' => 'Produit CBD supprimé avec succès.',
+                'message' => 'Product deleted successfully'
             ];
         } catch (\Exception $e) {
             throw new CustomException('Erreur interne', 'Impossible de supprimer le produit.');

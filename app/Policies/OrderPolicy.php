@@ -45,8 +45,8 @@ class OrderPolicy
      */
     public function delete(User $user, Order $order): bool
     {
-        // Seul un admin peut supprimer une commande
-        return $user->is_admin;
+        // Un utilisateur peut annuler ses commandes en attente, un admin peut tout annuler
+        return ($user->id === $order->user_id && $order->status === 'pending') || $user->is_admin;
     }
 
     /**

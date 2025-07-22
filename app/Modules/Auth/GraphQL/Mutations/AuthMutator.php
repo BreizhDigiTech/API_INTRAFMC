@@ -25,7 +25,7 @@ class AuthMutator
         $user = \App\Models\User::where('email', $args['email'])->first();
 
         if (!$user) {
-            throw new CustomException('Utilisateur introuvable', "Aucun utilisateur trouvé avec cet email.");
+            throw new CustomException('Invalid credentials', "The provided credentials are incorrect.");
         }
 
         if (!$user->is_active) {
@@ -34,7 +34,7 @@ class AuthMutator
 
         // Vérification des identifiants
         if (!Auth::attempt(['email' => $args['email'], 'password' => $args['password']])) {
-            throw new CustomException('Mot de passe incorrect', "Le mot de passe fourni est incorrect.");
+            throw new CustomException('Invalid credentials', "The provided credentials are incorrect.");
         }
 
         try {
@@ -46,7 +46,9 @@ class AuthMutator
             }
 
             return [
-                'token' => $token,
+                'access_token' => $token,
+                'token_type' => 'bearer',
+                'expires_in' => config('jwt.ttl') * 60, // Convert minutes to seconds
                 'user' => $user,
             ];
         } catch (\Exception $e) {
@@ -68,8 +70,7 @@ class AuthMutator
             // Invalidation du token
             JWTAuth::invalidate(JWTAuth::getToken());
             return [
-                'success' => true,
-                'message' => 'Déconnexion réussie. Le token a été révoqué.',
+                'message' => 'Successfully logged out',
             ];
         } catch (\Tymon\JWTAuth\Exceptions\TokenInvalidException $e) {
             throw new CustomException('Token invalide', 'Le token fourni est invalide.');

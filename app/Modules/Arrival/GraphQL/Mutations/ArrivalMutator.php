@@ -39,7 +39,7 @@ class ArrivalMutator
             'amount' => 'required|numeric|min:0',
             'status' => 'required|string|in:pending,validated',
             'products' => 'required|array',
-            'products.*.product_id' => 'required|integer|exists:products,id',
+            'products.*.product_id' => 'required|integer|exists:cbd_products,id',
             'products.*.quantity' => 'required|integer|min:1',
             'products.*.unit_price' => 'required|numeric|min:0',
         ])->validate();
@@ -112,14 +112,13 @@ class ArrivalMutator
         $user = AuthHelper::ensureAuthenticated();
 
         $arrival = $this->findArrivalOrFail($args['arrival_id']);
-        $validatedData = $this->validateArrivalInput($args['input']);
 
         if (!Gate::allows('update', $arrival)) {
             throw new CustomException('Acces refuse', 'Vous n\'avez pas les permissions necessaires pour modifier cet arrivage.');
         }
 
         try {
-            $updatedArrival = app(ArrivalService::class)->updateArrival($args['arrival_id'], $validatedData);
+            $updatedArrival = app(ArrivalService::class)->updateArrival($args['arrival_id'], $args['input']);
             // Retourne directement l'arrivage tel qu'attendu par le schema GraphQL
             return $updatedArrival;
         } catch (\Exception $e) {

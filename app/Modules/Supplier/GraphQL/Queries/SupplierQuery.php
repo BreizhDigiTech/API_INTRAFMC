@@ -44,21 +44,17 @@ class SupplierQuery
     {
         $user = AuthHelper::ensureAuthenticated();
 
-        try {
-            $supplier = Supplier::with('products')->find($args['id']);
+        $supplier = Supplier::with('products')->find($args['id']);
 
-            if (!$supplier) {
-                throw new CustomException('Fournisseur introuvable', "Aucun fournisseur n'a ete trouve avec cet identifiant.");
-            }
-
-            if (!Gate::allows('view', $supplier)) {
-                throw new CustomException('Acces refuse', 'Vous n\'avez pas les permissions necessaires pour voir ce fournisseur.');
-            }
-
-            // Retourne directement le fournisseur tel qu'attendu par le schema GraphQL
-            return $supplier;
-        } catch (\Exception $e) {
-            throw new CustomException('Erreur interne', 'Impossible de recuperer le fournisseur.');
+        if (!$supplier) {
+            throw new CustomException('Fournisseur introuvable', "Aucun fournisseur n'a ete trouve avec cet identifiant.");
         }
+
+        if (!Gate::allows('view', $supplier)) {
+            throw new CustomException('Acces refuse', 'Vous n\'avez pas les permissions necessaires pour voir ce fournisseur.');
+        }
+
+        // Retourne directement le fournisseur tel qu'attendu par le schema GraphQL
+        return $supplier;
     }
 }

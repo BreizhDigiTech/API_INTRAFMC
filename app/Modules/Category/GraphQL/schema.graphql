@@ -1,10 +1,23 @@
 type Category {
   id: ID!
   name: String!
+  description: String
+  created_at: String
   products: [ProductCBD!]!
 }
 
+input CreateCategoryInput {
+  name: String!
+  description: String
+}
+
+input UpdateCategoryInput {
+  name: String
+  description: String
+}
+
 extend type ProductCBD {
+  category: Category
   categories: [Category!]!
 }
 
@@ -14,15 +27,15 @@ extend type Query {
 }
 
 extend type Mutation {
-  createCategory(name: String!): Category
+  createCategory(input: CreateCategoryInput!): Category
     @guard(with: ["api"])
     @field(resolver: "App\\Modules\\Category\\GraphQL\\Mutations\\CategoryMutator@createCategory")
 
-  updateCategory(id: ID!, name: String!): Category
+  updateCategory(id: ID!, input: UpdateCategoryInput!): Category
     @guard(with: ["api"])
     @field(resolver: "App\\Modules\\Category\\GraphQL\\Mutations\\CategoryMutator@updateCategory")
 
-  deleteCategory(id: ID!): Boolean
+  deleteCategory(id: ID!): DeleteResponse
     @guard(with: ["api"])
     @field(resolver: "App\\Modules\\Category\\GraphQL\\Mutations\\CategoryMutator@deleteCategory")
 

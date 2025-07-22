@@ -1,17 +1,23 @@
 # Schéma GraphQL pour l'authentification
 
 type AuthPayload {
-  token: String! # Jeton JWT
-  user: User!    # Utilisateur connecté
+  access_token: String! # Jeton JWT
+  token_type: String!   # Type de token (Bearer)
+  expires_in: Int       # Durée de validité en secondes
+  user: User!           # Utilisateur connecté
+}
+
+type LogoutResponse {
+  message: String!      # Message de confirmation
 }
 
 type User {
-  id: ID!        # Identifiant utilisateur
-  name: String!  # Nom
-  email: String! # Email
-  avatar: String # URL de l'avatar
-  is_admin: Boolean # Vrai si admin
-  is_active: Boolean # Vrai si compte actif
+  id: ID!               # Identifiant utilisateur
+  name: String!         # Nom
+  email: String!        # Email
+  avatar: String        # URL de l'avatar
+  is_admin: Boolean     # Vrai si admin
+  is_active: Boolean    # Vrai si compte actif
   email_verified_at: String # Date de vérification de l'email
 }
 
@@ -22,6 +28,7 @@ extend type Mutation {
 
   # Déconnexion utilisateur
   logout: LogoutResponse
+    @guard
     @field(resolver: "App\\Modules\\Auth\\GraphQL\\Mutations\\AuthMutator@logout")
 }
 
@@ -30,9 +37,4 @@ extend type Query {
   me: User
     @guard
     @field(resolver: "App\\Modules\\Auth\\GraphQL\\Queries\\AuthQuery@me")
-}
-
-type LogoutResponse {
-  success: Boolean
-  message: String
 }

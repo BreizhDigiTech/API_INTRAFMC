@@ -7,3 +7,27 @@
 #import ./../app/Modules/Supplier/GraphQL/schema.graphql
 #import ./../app/Modules/Cart/GraphQL/schema.graphql
 #import ./../app/Modules/Order/GraphQL/schema.graphql
+
+"A date string with format `Y-m-d`."
+scalar Date
+
+"A datetime string with format `Y-m-d H:i:s`."
+scalar DateTime
+
+type DeleteResponse {
+    success: Boolean
+    message: String
+}
+
+type ChangePasswordResponse {
+    success: Boolean
+    message: String
+}
+
+type Query {
+    placeholder: String
+}
+
+type Mutation {
+    placeholder: String
+}

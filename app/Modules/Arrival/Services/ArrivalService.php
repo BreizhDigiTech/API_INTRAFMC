@@ -21,12 +21,12 @@ class ArrivalService
         $arrival = CbdArrival::findOrFail($arrivalId);
 
         if ($arrival->status === 'validated') {
-            throw new CustomException("L'arrivage est déjà validé.");
+            throw new CustomException('Erreur de validation', "L'arrivage est déjà validé.");
         }
 
         $arrival->update(['status' => 'validated']);
 
-        return $arrival;
+        return $arrival->load('products');
     }
 
     /**
@@ -71,10 +71,17 @@ class ArrivalService
     {
         $arrival = CbdArrival::findOrFail($arrivalId);
 
-        $arrival->update([
-            'amount' => $input['amount'] ?? $arrival->amount,
-            'status' => $input['status'] ?? $arrival->status,
-        ]);
+        $updateData = [];
+        if (isset($input['amount'])) {
+            $updateData['amount'] = $input['amount'];
+        }
+        if (isset($input['status'])) {
+            $updateData['status'] = $input['status'];
+        }
+
+        if (!empty($updateData)) {
+            $arrival->update($updateData);
+        }
 
         if (isset($input['products'])) {
             $arrivalProducts = ArrivalProductCbd::where('arrival_id', $arrival->id)->get();
@@ -90,7 +97,7 @@ class ArrivalService
             }
         }
 
-        return $arrival;
+        return $arrival->load('products');
     }
 
     /**
@@ -126,7 +133,7 @@ class ArrivalService
             'amount' => 'required|numeric|min:0',
             'status' => 'required|string|in:pending,validated',
             'products' => 'required|array',
-            'products.*.product_id' => 'required|integer|exists:products,id',
+            'products.*.product_id' => 'required|integer|exists:cbd_products,id',
             'products.*.quantity' => 'required|integer|min:1',
             'products.*.unit_price' => 'required|numeric|min:0',
         ]);

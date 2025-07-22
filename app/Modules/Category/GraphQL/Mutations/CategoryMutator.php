@@ -7,6 +7,7 @@ use App\Modules\Category\Services\CategoryService;
 use Illuminate\Support\Facades\Gate;
 use App\Models\Category;
 use App\Helpers\AuthHelper;
+use Illuminate\Validation\Rule;
 
 class CategoryMutator
 {
@@ -34,8 +35,22 @@ class CategoryMutator
         }
 
         try {
-            $category = $this->service->createCategory($args['name']);
+            $input = $args['input'];
+            
+            // Validate name uniqueness
+            $validator = validator($input, [
+                'name' => ['required', 'string', 'max:255', Rule::unique('categories', 'name')],
+                'description' => ['nullable', 'string']
+            ]);
+
+            if ($validator->fails()) {
+                throw \Illuminate\Validation\ValidationException::withMessages($validator->errors()->toArray());
+            }
+            
+            $category = $this->service->createCategory($input['name'], $input['description'] ?? null);
             return $category;
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            throw $e;
         } catch (\Exception $e) {
             throw new CustomException('Erreur interne', 'Impossible de créer la catégorie.');
         }
@@ -58,7 +73,8 @@ class CategoryMutator
         }
 
         try {
-            $updatedCategory = $this->service->updateCategory($args['id'], $args['name']);
+            $input = $args['input'];
+            $updatedCategory = $this->service->updateCategory($args['id'], $input['name'], $input['description'] ?? null);
             return $updatedCategory;
         } catch (\Exception $e) {
             throw new CustomException('Erreur interne', 'Impossible de modifier la catégorie.');
@@ -82,8 +98,8 @@ class CategoryMutator
         }
 
         try {
-            $this->service->deleteCategory($args['id']);
-            return true;
+            $result = $this->service->deleteCategory($args['id']);
+            return ['message' => 'Category deleted successfully'];
         } catch (\Exception $e) {
             throw new CustomException('Erreur interne', 'Impossible de supprimer la catégorie.');
         }

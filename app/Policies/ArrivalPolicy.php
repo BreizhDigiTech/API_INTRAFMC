@@ -12,8 +12,7 @@ class ArrivalPolicy
      */
     public function viewAny(User $user): bool
     {
-        // La Policy ne vérifie pas les rôles globaux ici
-        return true; // Tous les utilisateurs connectés peuvent voir les arrivages
+        return $user->is_admin;
     }
 
     /**
@@ -21,8 +20,7 @@ class ArrivalPolicy
      */
     public function view(User $user, CbdArrival $arrival): bool
     {
-        // Vérifie uniquement si l'utilisateur est lié à l'arrivage
-        return $user->id === $arrival->created_by;
+        return $user->is_admin;
     }
 
     /**
@@ -30,8 +28,7 @@ class ArrivalPolicy
      */
     public function create(User $user): bool
     {
-        // La Policy ne vérifie pas les rôles globaux ici
-        return true; // Tous les utilisateurs connectés peuvent créer un arrivage
+        return $user->is_admin;
     }
 
     /**
@@ -39,8 +36,7 @@ class ArrivalPolicy
      */
     public function update(User $user, CbdArrival $arrival): bool
     {
-        // Vérifie uniquement si l'utilisateur est lié à l'arrivage
-        return $user->id === $arrival->created_by;
+        return $user->is_admin;
     }
 
     /**
@@ -48,7 +44,6 @@ class ArrivalPolicy
      */
     public function delete(User $user, CbdArrival $arrival): bool
     {
-        // La policy ne verifie pas les rôles globaux ici
-        return true;
+        return $user->is_admin;
     }
 }

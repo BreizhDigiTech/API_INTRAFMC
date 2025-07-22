@@ -4,26 +4,11 @@ extend type Query {
 }
 
 extend type Mutation {
-  createProduct(
-    name: String!,
-    description: String,
-    price: Float!,
-    images: [String],
-    stock: Int!,
-    analysis_file: Upload
-  ): ProductCBD 
+  createProduct(input: CreateProductInput!): ProductCBD 
   @guard(with: ["api"]) 
   @field(resolver: "App\\Modules\\Product_CBD\\GraphQL\\Mutations\\ProductCBDMutator@createProduct")
 
-  updateProduct(
-    id: ID!,
-    name: String,
-    description: String,
-    price: Float,
-    images: [String],
-    stock: Int,
-    analysis_file: Upload
-  ): ProductCBD 
+  updateProduct(id: ID!, input: UpdateProductInput!): ProductCBD 
   @guard(with: ["api"])
   @field(resolver: "App\\Modules\\Product_CBD\\GraphQL\\Mutations\\ProductCBDMutator@updateProduct")
 
@@ -41,16 +26,32 @@ type ProductCBD {
   stock: Int!
   analysis_file: String # Fichier d'analyse (optionnel)
   analysis_file_url: String # URL du fichier d'analyse
+  category_id: Int
   created_at: String
   updated_at: String
+}
+
+input CreateProductInput {
+  name: String!
+  description: String
+  price: Float!
+  images: [String]
+  stock: Int!
+  analysis_file: String
+  category_id: Int
+}
+
+input UpdateProductInput {
+  name: String
+  description: String
+  price: Float
+  images: [String]
+  stock: Int
+  analysis_file: String
+  category_id: Int
 }
 
 type ProductCBDPagination {
   data: [ProductCBD]
   pagination: Pagination
-}
-
-type DeleteResponse {
-  success: Boolean
-  message: String
 }

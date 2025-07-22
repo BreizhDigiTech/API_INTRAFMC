@@ -14,16 +14,15 @@ return new class extends Migration
         Schema::create('carts', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
-            $table->timestamps();
-        });
-
-        Schema::create('cart_product', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('cart_id')->constrained('carts')->onDelete('cascade');
             $table->foreignId('product_id')->constrained('cbd_products')->onDelete('cascade');
             $table->integer('quantity');
             $table->timestamps();
+            
+            // Index unique pour éviter les doublons user_id + product_id
+            $table->unique(['user_id', 'product_id']);
         });
+
+        // Supprimé la table pivot car on utilise directement la table carts
     }
 
     /**
@@ -31,7 +30,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('cart_product');
         Schema::dropIfExists('carts');
     }
 };

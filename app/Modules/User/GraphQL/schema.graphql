@@ -59,16 +59,6 @@ type UserPagination {
     pagination: Pagination
 }
 
-type DeleteResponse {
-    success: Boolean
-    message: String
-}
-
-type ChangePasswordResponse {
-    success: Boolean
-    message: String
-}
-
 type Pagination {
     total: Int
     per_page: Int

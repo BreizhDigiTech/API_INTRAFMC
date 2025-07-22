@@ -173,15 +173,42 @@ query {
 
 ## 🧪 Tests
 
-Exécuter les tests :
-```bash
-php artisan test
-```
+### Tests automatisés disponibles
 
-Exécuter les tests avec couverture :
+L'API dispose d'une suite complète de tests automatisés pour les queries et mutations GraphQL :
+
 ```bash
+# Lancer tous les tests
+php artisan test
+
+# Tests spécifiques
+php artisan test tests/Feature/GraphQL/AuthTest.php      # Authentification
+php artisan test tests/Feature/GraphQL/ProductCBDTest.php # Produits CBD
+php artisan test tests/Feature/GraphQL/CategoryTest.php   # Catégories
+php artisan test tests/Feature/GraphQL/CartTest.php       # Panier
+
+# Avec couverture de code
 php artisan test --coverage
 ```
+
+### Scripts de test disponibles
+
+**PowerShell (Windows)** :
+```powershell
+.\run-tests.ps1              # Tous les tests
+.\run-tests.ps1 graphql      # Tests GraphQL uniquement
+.\run-tests.ps1 coverage     # Avec couverture de code
+```
+
+**Tests inclus** :
+- ✅ Authentification (login, logout, profil utilisateur)
+- ✅ Gestion des produits CBD (CRUD complet)
+- ✅ Gestion des catégories (CRUD complet)
+- ✅ Gestion du panier (ajout, modification, suppression)
+- ✅ Validation des données et gestion des erreurs
+- ✅ Tests de sécurité et d'autorisation
+
+**Documentation complète** : Voir [TESTS.md](TESTS.md) pour plus de détails.
 
 ## 🔧 Dépannage
 

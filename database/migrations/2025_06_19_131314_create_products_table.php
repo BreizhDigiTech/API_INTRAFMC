@@ -19,6 +19,7 @@ class CreateProductsTable extends Migration
             $table->json('images')->nullable(); // Tableau JSON pour les URLs des images
             $table->integer('stock')->default(0); // Quantité en stock
             $table->string('analysis_file')->nullable(); // Fichier d'analyse (optionnel)
+            $table->foreignId('category_id')->nullable()->constrained('categories')->onDelete('set null'); // Référence à la catégorie
             $table->timestamps(); // created_at et updated_at
         });
     }

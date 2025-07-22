@@ -11,15 +11,15 @@ class OrderService
     public function checkout($userId)
     {
         return DB::transaction(function () use ($userId) {
-            $cart = Cart::where('user_id', $userId)->with('products')->firstOrFail();
+            $cartItems = Cart::where('user_id', $userId)->with('product')->get();
 
-            if ($cart->products->isEmpty()) {
+            if ($cartItems->isEmpty()) {
                 throw new \Exception("Le panier est vide.");
             }
 
             $total = 0;
-            foreach ($cart->products as $product) {
-                $total += $product->pivot->quantity * $product->price;
+            foreach ($cartItems as $cartItem) {
+                $total += $cartItem->quantity * $cartItem->product->price;
             }
 
             $order = Order::create([
@@ -28,15 +28,15 @@ class OrderService
                 'status' => 'pending',
             ]);
 
-            foreach ($cart->products as $product) {
-                $order->products()->attach($product->id, [
-                    'quantity' => $product->pivot->quantity,
-                    'unit_price' => $product->price,
+            foreach ($cartItems as $cartItem) {
+                $order->products()->attach($cartItem->product->id, [
+                    'quantity' => $cartItem->quantity,
+                    'unit_price' => $cartItem->product->price,
                 ]);
             }
 
             // Vide le panier
-            $cart->products()->detach();
+            Cart::where('user_id', $userId)->delete();
 
             return $order->load('products');
         });

@@ -11,11 +11,6 @@ extend type Mutation {
   ): AuthPayload @field(resolver: "App\\Modules\\Register\\GraphQL\\Mutations\\RegisterMutator@register")
 }
 
-type AuthPayload {
-  user: User!
-  token: String!
-}
-
 
 
 

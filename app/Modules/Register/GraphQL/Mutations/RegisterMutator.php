@@ -26,19 +26,16 @@ class RegisterMutator
      */
     public function register($root, array $args)
     {
-        // Vérifie si l'utilisateur a les permissions nécessaires pour créer un utilisateur
-        if (!Gate::allows('create', User::class)) {
-            throw new CustomException('Accès refusé', 'Vous n\'avez pas les permissions nécessaires pour créer un utilisateur.');
-        }
-
         try {
             // Appelle le service d'inscription
             $result = $this->service->register($args);
             
             // Retourne directement la structure attendue par le schéma GraphQL
             return [
+                'access_token' => $result['token'],
+                'token_type' => 'bearer',
+                'expires_in' => config('jwt.ttl') * 60,
                 'user' => $result['user'],
-                'token' => $result['token'],
             ];
         } catch (\Illuminate\Validation\ValidationException $e) {
             // Gestion des erreurs de validation

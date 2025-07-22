@@ -2,35 +2,48 @@
 
 type Cart {
   id: ID!
-  user: User!
-  products: [CartProduct!]!
+  user_id: ID!
+  product_id: ID!
+  quantity: Int!
+  user: User
+  product: ProductCBD
+  created_at: String
+  updated_at: String
 }
 
-type CartProduct {
-  id: ID!
-  name: String!
-  price: Float!
-  quantity: Int! @method(name: "getCartQuantity")
+type CartSummary {
+  total: Float!
+  itemCount: Int!
+}
+
+input AddToCartInput {
+  product_id: ID!
+  quantity: Int!
+}
+
+input UpdateCartItemInput {
+  quantity: Int!
 }
 
 extend type Query {
-  myCart: Cart @guard @field(resolver: "App\\Modules\\Cart\\GraphQL\\Queries\\CartQuery@myCart")
+  myCart: [Cart!]! @guard @field(resolver: "App\\Modules\\Cart\\GraphQL\\Queries\\CartQuery@myCart")
+  cartTotal: CartSummary @guard @field(resolver: "App\\Modules\\Cart\\GraphQL\\Queries\\CartQuery@cartTotal")
 }
 
 extend type Mutation {
-  addToCart(product_id: ID!, quantity: Int!): Cart
+  addToCart(input: AddToCartInput!): Cart
     @guard
     @field(resolver: "App\\Modules\\Cart\\GraphQL\\Mutations\\CartMutator@addToCart")
 
-  removeFromCart(product_id: ID!): Cart
+  updateCartItem(id: ID!, input: UpdateCartItemInput!): Cart
+    @guard
+    @field(resolver: "App\\Modules\\Cart\\GraphQL\\Mutations\\CartMutator@updateCartItem")
+
+  removeFromCart(id: ID!): DeleteResponse
     @guard
     @field(resolver: "App\\Modules\\Cart\\GraphQL\\Mutations\\CartMutator@removeFromCart")
 
-  clearCart: Cart
+  clearCart: DeleteResponse
     @guard
     @field(resolver: "App\\Modules\\Cart\\GraphQL\\Mutations\\CartMutator@clearCart")
-
-  updateCartProductQuantity(product_id: ID!, quantity: Int!): Cart
-    @guard
-    @field(resolver: "App\\Modules\\Cart\\GraphQL\\Mutations\\CartMutator@updateCartProductQuantity")
 }

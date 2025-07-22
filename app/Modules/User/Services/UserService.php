@@ -28,6 +28,11 @@ class UserService
         ];
     }
 
+    public function getUserById($id)
+    {
+        return User::find($id);
+    }
+
     public function updateUser(array $data)
     {
         $user = User::find($data['id']);

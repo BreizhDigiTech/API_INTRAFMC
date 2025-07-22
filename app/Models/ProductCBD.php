@@ -1,11 +1,14 @@
 <?php
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
 
 class ProductCBD extends Model
 {
+    use HasFactory;
+    
     protected $table = 'cbd_products'; // Nom de la table en base de données
 
     protected $fillable = [
@@ -15,6 +18,7 @@ class ProductCBD extends Model
         'images',
         'stock',
         'analysis_file', // Fichier d'analyse
+        'category_id', // Référence à la catégorie
     ];
 
     protected $casts = [
@@ -31,6 +35,11 @@ class ProductCBD extends Model
                 Storage::disk('analysis')->delete($product->analysis_file);
             }
         });
+    }
+
+    public function category()
+    {
+        return $this->belongsTo(Category::class, 'category_id');
     }
 
     public function categories()

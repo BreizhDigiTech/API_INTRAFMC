@@ -7,15 +7,22 @@ use App\Models\ProductCBD;
 
 class CategoryService
 {
-    public function createCategory($name)
+    public function createCategory($name, $description = null)
     {
-        return Category::create(['name' => $name]);
+        return Category::create([
+            'name' => $name,
+            'description' => $description
+        ]);
     }
 
-    public function updateCategory($id, $name)
+    public function updateCategory($id, $name, $description = null)
     {
         $category = Category::findOrFail($id);
-        $category->update(['name' => $name]);
+        $updateData = ['name' => $name];
+        if ($description !== null) {
+            $updateData['description'] = $description;
+        }
+        $category->update($updateData);
         return $category;
     }
 
