@@ -36,6 +36,22 @@ return [
             'report' => false,
         ],
 
+        // Images produits CBD
+        'product_images' => [
+            'driver' => 'local',
+            'root' => storage_path('app/product_images'),
+            'throw' => false,
+            'report' => false,
+        ],
+
+        // Avatars utilisateurs
+        'avatars' => [
+            'driver' => 'local',
+            'root' => storage_path('app/avatars'),
+            'throw' => false,
+            'report' => false,
+        ],
+
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),
