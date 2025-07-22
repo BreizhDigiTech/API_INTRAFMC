@@ -27,7 +27,27 @@ class CartFactory extends Factory
         return [
             'user_id' => User::factory(),
             'product_id' => ProductCBD::factory(),
-            'quantity' => $this->faker->numberBetween(1, 5),
+            'quantity' => fake()->numberBetween(1, 5),
         ];
+    }
+
+    /**
+     * Create a cart item with large quantity.
+     */
+    public function largeQuantity(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'quantity' => fake()->numberBetween(5, 10),
+        ]);
+    }
+
+    /**
+     * Create a cart item with single quantity.
+     */
+    public function single(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'quantity' => 1,
+        ]);
     }
 }
