@@ -9,7 +9,7 @@ L'API utilise JWT (JSON Web Tokens) pour l'authentification.
 ### Connexion
 ```graphql
 mutation {
-  login(email: "admin@test.com", password: "password") {
+  login(email: "admin@admin.com", password: "L15fddef!") {
     access_token
     token_type
     expires_in
