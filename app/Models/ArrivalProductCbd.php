@@ -2,9 +2,11 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class ArrivalProductCbd extends Model
 {
+    use HasFactory;
     protected $table = 'arrival_product_cbd';
     protected $fillable = ['arrival_id', 'product_id', 'quantity', 'unit_price'];
 
