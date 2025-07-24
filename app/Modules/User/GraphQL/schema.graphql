@@ -1,9 +1,8 @@
 extend type Query {
-    #
     # Liste des utilisateurs (accessible uniquement par les administrateurs)
-    users(page: Int): UserPagination
+    users(first: Int, page: Int): [User!]!
         @guard(with: ["api"])
-        @field(resolver: "App\\Modules\\User\\GraphQL\\Queries\\UserQuery@users")
+        @paginate(defaultCount: 15, maxCount: 50, model: "App\\Models\\User")
 
     # Récupère un utilisateur spécifique
     user(id: ID!): User
@@ -52,23 +51,4 @@ extend type Mutation {
 input UserFilterInput {
     is_active: Boolean
     is_admin: Boolean
-}
-
-type UserPagination {
-    data: [User]
-    pagination: Pagination
-}
-
-type Pagination {
-    total: Int
-    per_page: Int
-    current_page: Int
-    last_page: Int
-    first_page_url: String
-    last_page_url: String
-    next_page_url: String
-    prev_page_url: String
-    path: String
-    from: Int
-    to: Int
 }

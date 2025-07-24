@@ -4,6 +4,8 @@ type Order {
   total: Float!
   status: String!
   products: [OrderProduct!]!
+  created_at: DateTime
+  updated_at: DateTime
 }
 
 type OrderProduct {
@@ -29,9 +31,9 @@ extend type Mutation {
 }
 
 extend type Query {
-  orders: [Order!]!
+  orders(first: Int, page: Int): [Order!]!
     @guard
-    @field(resolver: "App\\Modules\\Order\\GraphQL\\Queries\\OrderQuery@orders")
+    @paginate(defaultCount: 10, maxCount: 50, model: "App\\Models\\Order")
 
   order(id: ID!): Order
     @guard

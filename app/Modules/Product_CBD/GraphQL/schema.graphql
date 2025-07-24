@@ -1,6 +1,9 @@
 extend type Query {
-  products(page: Int, per_page: Int): ProductCBDPagination @field(resolver: "App\\Modules\\Product_CBD\\GraphQL\\Queries\\ProductCBDQuery@products")
-  product(id: ID!): ProductCBD @field(resolver: "App\\Modules\\Product_CBD\\GraphQL\\Queries\\ProductCBDQuery@product")
+  products(first: Int, page: Int): [ProductCBD!]!
+    @paginate(defaultCount: 20, maxCount: 100, model: "App\\Models\\ProductCBD")
+  
+  product(id: ID!): ProductCBD 
+    @field(resolver: "App\\Modules\\Product_CBD\\GraphQL\\Queries\\ProductCBDQuery@product")
 }
 
 extend type Mutation {
@@ -49,9 +52,4 @@ input UpdateProductInput {
   stock: Int
   analysis_file: String
   category_id: Int
-}
-
-type ProductCBDPagination {
-  data: [ProductCBD]
-  pagination: Pagination
 }

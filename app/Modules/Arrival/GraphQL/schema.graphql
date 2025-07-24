@@ -21,9 +21,9 @@ extend type Mutation {
 }
 
 extend type Query {
-  arrivals: [CbdArrival]
+  arrivals(first: Int, page: Int): [CbdArrival!]!
     @guard(with: ["api"])
-    @field(resolver: "App\\Modules\\Arrival\\GraphQL\\Queries\\ArrivalQuery@arrivals")
+    @paginate(defaultCount: 15, maxCount: 50, model: "App\\Models\\CbdArrival")
 
   arrival(arrival_id: ID!): CbdArrival
     @guard(with: ["api"])
@@ -35,6 +35,8 @@ type CbdArrival {
   amount: Float!
   status: String!
   products: [ArrivalProductCbd]
+  created_at: DateTime
+  updated_at: DateTime
 }
 
 type ArrivalProductCbd {
