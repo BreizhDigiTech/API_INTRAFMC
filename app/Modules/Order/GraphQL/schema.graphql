@@ -20,6 +20,11 @@ type OrderProductPivot {
   unit_price: Float!
 }
 
+input UpdateOrderStatusInput {
+  id: ID!
+  status: String!
+}
+
 extend type Mutation {
   checkout: Order
     @guard
@@ -28,13 +33,25 @@ extend type Mutation {
   cancelOrder(id: ID!): Boolean
     @guard
     @field(resolver: "App\\Modules\\Order\\GraphQL\\Mutations\\OrderMutator@cancelOrder")
+
+  updateOrderStatus(input: UpdateOrderStatusInput!): Order
+    @guard
+    @field(resolver: "App\\Modules\\Order\\GraphQL\\Mutations\\OrderMutator@updateOrderStatus")
 }
 
 extend type Query {
+  # Toutes les commandes - Admin uniquement
   orders(first: Int, page: Int): [Order!]!
     @guard
+    @can(ability: "viewAny", model: "App\\Models\\Order")
     @paginate(defaultCount: 10, maxCount: 50, model: "App\\Models\\Order")
 
+  # Mes commandes - Utilisateur connecté
+  myOrders(first: Int, page: Int): [Order!]!
+    @guard
+    @field(resolver: "App\\Modules\\Order\\GraphQL\\Queries\\OrderQuery@myOrders")
+
+  # Détail d'une commande - Avec vérification de propriété
   order(id: ID!): Order
     @guard
     @field(resolver: "App\\Modules\\Order\\GraphQL\\Queries\\OrderQuery@order")

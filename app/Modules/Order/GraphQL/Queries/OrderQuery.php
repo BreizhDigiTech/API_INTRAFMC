@@ -27,36 +27,64 @@ class OrderQuery
     }
 
     /**
-     * Récupère la liste des commandes de l'utilisateur connecté.
+     * Récupère toutes les commandes - Admin uniquement.
      *
      * @param mixed $root
      * @param array $args
-     * @return array
+     * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator
      * @throws CustomException
      */
     public function orders($root, array $args)
     {
         $user = AuthHelper::ensureAuthenticated();
 
-        if (!Gate::allows('viewAny', Order::class)) {
-            throw new CustomException('Accès refusé', 'Vous n’avez pas les permissions nécessaires pour voir la liste des commandes.');
+        if (!$user->is_admin) {
+            throw new CustomException('Accès refusé', 'Seuls les administrateurs peuvent voir toutes les commandes.');
         }
 
         try {
-            $orders = Order::with('products')->where('user_id', $user->id)->get();
-            // Retourne directement le tableau de commandes tel qu'attendu par le schéma GraphQL
-            return $orders;
+            // La pagination est gérée automatiquement par @paginate dans le schéma
+            return Order::with('products', 'user')->paginate($args['first'] ?? 10);
         } catch (\Exception $e) {
             throw new CustomException('Erreur interne', 'Impossible de récupérer la liste des commandes.');
         }
     }
 
     /**
-     * Récupère une commande spécifique de l'utilisateur connecté.
+     * Récupère les commandes de l'utilisateur connecté uniquement.
      *
      * @param mixed $root
      * @param array $args
-     * @return array
+     * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator
+     * @throws CustomException
+     */
+    public function myOrders($root, array $args)
+    {
+        $user = AuthHelper::ensureAuthenticated();
+
+        try {
+            $query = Order::with('products')
+                ->where('user_id', $user->id)
+                ->orderBy('created_at', 'desc');
+
+            // Pagination manuelle
+            $perPage = min($args['first'] ?? 10, 50); // Max 50 par page
+            $page = $args['page'] ?? 1;
+            
+            return $query->paginate($perPage, ['*'], 'page', $page);
+        } catch (\Exception $e) {
+            throw new CustomException('Erreur interne', 'Impossible de récupérer vos commandes.');
+        }
+    }
+
+    /**
+     * Récupère une commande spécifique.
+     * Admin : peut voir toutes les commandes
+     * Utilisateur : peut voir seulement ses commandes
+     *
+     * @param mixed $root
+     * @param array $args
+     * @return Order
      * @throws CustomException
      */
     public function order($root, array $args)
@@ -65,8 +93,9 @@ class OrderQuery
 
         $order = $this->findOrderOrFail($args['id']);
 
-        if ($order->user_id !== $user->id) {
-            throw new CustomException('Accès refusé', 'Vous n’avez pas les permissions nécessaires pour voir cette commande.');
+        // Vérification des permissions
+        if (!$user->is_admin && $order->user_id !== $user->id) {
+            throw new CustomException('Accès refusé', 'Vous n\'avez pas les permissions nécessaires pour voir cette commande.');
         }
 
         try {

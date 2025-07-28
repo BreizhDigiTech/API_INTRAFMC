@@ -70,4 +70,45 @@ class OrderMutator
             throw new CustomException('Erreur interne', 'Impossible d\'annuler la commande.');
         }
     }
+
+    /**
+     * Met à jour le statut d'une commande (Admin uniquement).
+     *
+     * @param mixed $_
+     * @param array $args
+     * @return Order
+     * @throws CustomException
+     */
+    public function updateOrderStatus($_, array $args)
+    {
+        $user = AuthHelper::ensureAuthenticated();
+        
+        // Seuls les admins peuvent changer le statut
+        if (!$user->is_admin) {
+            throw new CustomException('Accès refusé', 'Seuls les administrateurs peuvent modifier le statut des commandes.');
+        }
+
+        $input = $args['input'];
+        $order = Order::find($input['id']);
+        
+        if (!$order) {
+            throw new CustomException('Commande introuvable', 'Aucune commande trouvée avec cet ID.');
+        }
+
+        // Validation du statut
+        $validStatuses = ['pending', 'validated', 'cancelled'];
+        if (!in_array($input['status'], $validStatuses)) {
+            throw new CustomException('Statut invalide', 'Le statut doit être : pending, validated ou cancelled.');
+        }
+
+        try {
+            $order->status = $input['status'];
+            $order->save();
+
+            // Retourne la commande avec ses relations
+            return $order->load('products', 'user');
+        } catch (\Exception $e) {
+            throw new CustomException('Erreur interne', 'Impossible de mettre à jour le statut de la commande.');
+        }
+    }
 }

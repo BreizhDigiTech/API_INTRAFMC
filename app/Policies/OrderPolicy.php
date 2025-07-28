@@ -9,10 +9,11 @@ class OrderPolicy
 {
     /**
      * Determine whether the user can view any models.
+     * Seuls les admins peuvent voir toutes les commandes
      */
     public function viewAny(User $user): bool
     {
-        return true; // Tous les utilisateurs peuvent voir leurs commandes
+        return $user->is_admin;
     }
 
     /**
