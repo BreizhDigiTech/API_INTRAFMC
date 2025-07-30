@@ -40,19 +40,20 @@ extend type Mutation {
 }
 
 extend type Query {
-  # Toutes les commandes - Admin uniquement
-  orders(first: Int, page: Int): [Order!]!
+  # Toutes les commandes - Admin uniquement avec pagination automatique
+  orders: [Order!]!
     @guard
     @can(ability: "viewAny", model: "App\\Models\\Order")
-    @paginate(defaultCount: 10, maxCount: 50, model: "App\\Models\\Order")
+    @paginate(defaultCount: 15, maxCount: 100, model: "App\\Models\\Order")
 
-  # Mes commandes - Utilisateur connecté
-  myOrders(first: Int, page: Int): [Order!]!
+  # Mes commandes - Utilisateur connecté avec pagination automatique
+  myOrders: [Order!]!
     @guard
-    @field(resolver: "App\\Modules\\Order\\GraphQL\\Queries\\OrderQuery@myOrders")
+    @paginate(defaultCount: 10, maxCount: 50, model: "App\\Models\\Order", scopes: ["forUser"])
 
   # Détail d'une commande - Avec vérification de propriété
   order(id: ID!): Order
     @guard
-    @field(resolver: "App\\Modules\\Order\\GraphQL\\Queries\\OrderQuery@order")
+    @can(ability: "view", model: "App\\Models\\Order")
+    @find(model: "App\\Models\\Order")
 }

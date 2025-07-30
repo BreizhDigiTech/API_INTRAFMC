@@ -3,27 +3,20 @@
 namespace App\Modules\Product_CBD\GraphQL\Mutations;
 
 use App\Exceptions\CustomException;
-use App\Modules\Product_CBD\Services\ProductCBDService;
 use Illuminate\Support\Facades\Gate;
 use App\Models\ProductCBD;
 use App\Helpers\AuthHelper;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Storage;
 
 class ProductCBDMutator
 {
-    protected $service;
-
-    public function __construct()
-    {
-        $this->service = app(ProductCBDService::class);
-    }
-
     /**
      * Crée un nouveau produit CBD.
      *
      * @param mixed $root
      * @param array $args
-     * @return array
+     * @return ProductCBD
      * @throws CustomException
      */
     public function createProduct($root, array $args)
@@ -31,7 +24,7 @@ class ProductCBDMutator
         $user = AuthHelper::ensureAuthenticated();
 
         if (!Gate::allows('create', ProductCBD::class)) {
-            throw new CustomException('Accès refusé', 'Vous n’avez pas les permissions nécessaires pour créer un produit.');
+            throw new CustomException('Acces refuse', 'Vous n\'avez pas les permissions necessaires pour creer un produit.');
         }
 
         try {
@@ -49,15 +42,25 @@ class ProductCBDMutator
             ]);
 
             if ($validator->fails()) {
-                throw new \Illuminate\Validation\ValidationException($validator);
+                throw \Illuminate\Validation\ValidationException::withMessages($validator->errors()->toArray());
             }
-            
-            $product = $this->service->createProduct($input);
+
+            // Create product directly
+            $product = ProductCBD::create([
+                'name' => $input['name'],
+                'description' => $input['description'] ?? null,
+                'price' => $input['price'],
+                'stock' => $input['stock'],
+                'category_id' => $input['category_id'] ?? null,
+                'analysis_file' => $input['analysis_file'] ?? null,
+                'images' => $input['images'] ?? []
+            ]);
+
             return $product;
         } catch (\Illuminate\Validation\ValidationException $e) {
             throw $e;
         } catch (\Exception $e) {
-            throw new CustomException('Erreur interne', 'Impossible de créer le produit.');
+            throw new CustomException('Erreur interne', 'Impossible de creer le produit.');
         }
     }
 
@@ -66,7 +69,7 @@ class ProductCBDMutator
      *
      * @param mixed $root
      * @param array $args
-     * @return array
+     * @return ProductCBD
      * @throws CustomException
      */
     public function updateProduct($root, array $args)
@@ -75,7 +78,7 @@ class ProductCBDMutator
         $product = ProductCBD::findOrFail($args['id']);
 
         if (!Gate::allows('update', $product)) {
-            throw new CustomException('Accès refusé', 'Vous n’avez pas les permissions nécessaires pour modifier ce produit.');
+            throw new CustomException('Acces refuse', 'Vous n\'avez pas les permissions necessaires pour modifier ce produit.');
         }
 
         try {
@@ -93,11 +96,15 @@ class ProductCBDMutator
             ]);
 
             if ($validator->fails()) {
-                throw new \Illuminate\Validation\ValidationException($validator);
+                throw \Illuminate\Validation\ValidationException::withMessages($validator->errors()->toArray());
             }
-            
-            $updatedProduct = $this->service->updateProduct($input, $args['id']);
-            return $updatedProduct;
+
+            // Update product directly
+            $product->update(array_filter($input, function($value) {
+                return $value !== null;
+            }));
+
+            return $product->fresh();
         } catch (\Illuminate\Validation\ValidationException $e) {
             throw $e;
         } catch (\Exception $e) {
@@ -119,13 +126,20 @@ class ProductCBDMutator
         $product = ProductCBD::findOrFail($args['id']);
 
         if (!Gate::allows('delete', $product)) {
-            throw new CustomException('Accès refusé', 'Vous n’avez pas les permissions nécessaires pour supprimer ce produit.');
+            throw new CustomException('Acces refuse', 'Vous n\'avez pas les permissions necessaires pour supprimer ce produit.');
         }
 
         try {
-            $this->service->deleteProduct($args['id']);
+            // Delete analysis file if exists
+            if ($product->analysis_file && Storage::exists($product->analysis_file)) {
+                Storage::delete($product->analysis_file);
+            }
+
+            $product->delete();
+
             return [
-                'message' => 'Product deleted successfully'
+                'success' => true,
+                'message' => 'Produit supprime avec succes.'
             ];
         } catch (\Exception $e) {
             throw new CustomException('Erreur interne', 'Impossible de supprimer le produit.');

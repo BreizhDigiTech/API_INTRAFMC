@@ -1,9 +1,12 @@
 extend type Query {
-  products(first: Int, page: Int): [ProductCBD!]!
+  products: [ProductCBD!]!
+    @guard(with: ["api"])
     @paginate(defaultCount: 20, maxCount: 100, model: "App\\Models\\ProductCBD")
   
   product(id: ID!): ProductCBD 
-    @field(resolver: "App\\Modules\\Product_CBD\\GraphQL\\Queries\\ProductCBDQuery@product")
+    @guard(with: ["api"])
+    @can(ability: "view", model: "App\\Models\\ProductCBD")
+    @find(model: "App\\Models\\ProductCBD")
 }
 
 extend type Mutation {

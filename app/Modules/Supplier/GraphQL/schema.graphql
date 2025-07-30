@@ -11,8 +11,13 @@ extend type ProductCBD {
 }
 
 extend type Query {
-  suppliers: [Supplier!]! @guard(with: ["api"]) @field(resolver: "App\\Modules\\Supplier\\GraphQL\\Queries\\SupplierQuery@suppliers")
-  supplier(id: ID!): Supplier @guard(with: ["api"]) @field(resolver: "App\\Modules\\Supplier\\GraphQL\\Queries\\SupplierQuery@supplier")
+  suppliers: [Supplier!]! 
+    @guard(with: ["api"]) 
+    @paginate(defaultCount: 20, maxCount: 100, model: "App\\Models\\Supplier")
+  supplier(id: ID!): Supplier 
+    @guard(with: ["api"]) 
+    @can(ability: "view", model: "App\\Models\\Supplier")
+    @find(model: "App\\Models\\Supplier")
 }
 
 extend type Mutation {

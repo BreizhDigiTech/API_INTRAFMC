@@ -22,8 +22,13 @@ extend type ProductCBD {
 }
 
 extend type Query {
-  categories: [Category!]! @guard(with: ["api"]) @field(resolver: "App\\Modules\\Category\\GraphQL\\Queries\\CategoryQuery@categories")
-  category(id: ID!): Category @guard(with: ["api"]) @field(resolver: "App\\Modules\\Category\\GraphQL\\Queries\\CategoryQuery@category")
+  categories: [Category!]! 
+    @guard(with: ["api"]) 
+    @paginate(defaultCount: 20, maxCount: 100, model: "App\\Models\\Category")
+  category(id: ID!): Category 
+    @guard(with: ["api"]) 
+    @can(ability: "view", model: "App\\Models\\Category")
+    @find(model: "App\\Models\\Category")
 }
 
 extend type Mutation {
