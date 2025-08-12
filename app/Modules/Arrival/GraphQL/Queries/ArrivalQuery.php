@@ -18,8 +18,10 @@ class ArrivalQuery
         AuthHelper::ensureAuthenticated();
 
         if (Gate::allows('viewAny', CbdArrival::class)) {
-            // Builder avec relations nécessaires
-            return CbdArrival::query()->with('products');
+            // Builder avec relations nécessaires, tri par dernières créations
+            return CbdArrival::query()
+                ->with('products')
+                ->orderByDesc('created_at');
         }
 
         // Requête qui ne retourne rien pour les non-admins

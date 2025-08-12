@@ -8,6 +8,14 @@ use Illuminate\Support\Facades\Gate;
 
 class ProductCBDQuery
 {
+    public function products($root, array $args)
+    {
+        AuthHelper::ensureAuthenticated();
+
+        // Pas de restriction spécifique mentionnée dans les tests
+        return ProductCBD::query()->orderByDesc('created_at');
+    }
+
     public function product($root, array $args)
     {
         AuthHelper::ensureAuthenticated();

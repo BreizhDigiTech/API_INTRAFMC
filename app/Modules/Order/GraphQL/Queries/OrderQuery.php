@@ -10,6 +10,33 @@ use Illuminate\Support\Facades\Gate;
 class OrderQuery
 {
     /**
+     * Builder pour la liste admin des commandes (tri DESC)
+     */
+    public function orders($root, array $args)
+    {
+        AuthHelper::ensureAuthenticated();
+
+        if (!Gate::allows('viewAny', Order::class)) {
+            // liste vide si non autorisé
+            return Order::query()->whereRaw('1=0');
+        }
+
+        return Order::query()->orderByDesc('created_at');
+    }
+
+    /**
+     * Builder pour mes commandes (utilisateur courant), tri DESC
+     */
+    public function myOrders($root, array $args)
+    {
+        $user = AuthHelper::ensureAuthenticated();
+
+        return Order::query()
+            ->where('user_id', $user->id)
+            ->orderByDesc('created_at');
+    }
+
+    /**
      * Retourne une commande avec verifications d'autorisation.
      *
      * @param mixed $_

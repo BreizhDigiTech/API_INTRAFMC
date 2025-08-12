@@ -1,7 +1,11 @@
 extend type Query {
   products: [ProductCBD!]!
     @guard(with: ["api"])
-    @paginate(defaultCount: 20, maxCount: 100, model: "App\\Models\\ProductCBD")
+    @paginate(
+      defaultCount: 20,
+      maxCount: 100,
+      builder: "App\\Modules\\Product_CBD\\GraphQL\\Queries\\ProductCBDQuery@products"
+    )
   
   product(id: ID!): ProductCBD 
     @guard(with: ["api"]) 

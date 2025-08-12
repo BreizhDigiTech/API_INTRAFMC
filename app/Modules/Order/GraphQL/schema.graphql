@@ -45,12 +45,12 @@ extend type Query {
   orders: [Order!]!
     @guard
     @can(ability: "viewAny", model: "App\\Models\\Order")
-    @paginate(defaultCount: 15, maxCount: 100, model: "App\\Models\\Order")
+    @paginate(defaultCount: 15, maxCount: 100, builder: "App\\Modules\\Order\\GraphQL\\Queries\\OrderQuery@orders")
 
   # Mes commandes - Utilisateur connecté avec pagination automatique
   myOrders: [Order!]!
     @guard
-    @paginate(defaultCount: 10, maxCount: 50, model: "App\\Models\\Order", scopes: ["forUser"])
+    @paginate(defaultCount: 10, maxCount: 50, builder: "App\\Modules\\Order\\GraphQL\\Queries\\OrderQuery@myOrders")
 
   # Détail d'une commande - Avec vérification de propriété
   order(id: ID!): Order
