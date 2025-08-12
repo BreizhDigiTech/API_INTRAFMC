@@ -3,18 +3,26 @@ type Supplier {
   name: String!
   email: String
   phone: String
+  address: String
+  website: String
+  contact_person: String
+  description: String
   products: [ProductCBD!]!
 }
+
 
 extend type ProductCBD {
   suppliers: [Supplier!]!
 }
 
 extend type Query {
-  suppliers: [Supplier!]! 
+  suppliers(first: Int, page: Int): [Supplier!]! 
     @guard(with: ["api"]) 
-    @can(ability: "viewAny", model: "App\\Models\\Supplier")
-    @paginate(defaultCount: 20, maxCount: 100, model: "App\\Models\\Supplier")
+    @paginate(
+      defaultCount: 20,
+      maxCount: 100,
+      builder: "App\\Modules\\Supplier\\GraphQL\\Queries\\SupplierQuery@suppliers"
+    )
   supplier(id: ID!): Supplier 
     @guard(with: ["api"]) 
     @can(ability: "view", model: "App\\Models\\Supplier")
@@ -22,7 +30,7 @@ extend type Query {
 }
 
 extend type Mutation {
-  createSupplier(name: String!, email: String, phone: String): Supplier
+  createSupplier(name: String!, email: String, phone: String, address: String, website: String, contact_person: String, description: String): Supplier
     @guard(with: ["api"])
     @field(resolver: "App\\Modules\\Supplier\\GraphQL\\Mutations\\SupplierMutator@createSupplier")
 

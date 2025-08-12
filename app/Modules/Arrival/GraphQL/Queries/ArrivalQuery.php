@@ -3,72 +3,45 @@
 namespace App\Modules\Arrival\GraphQL\Queries;
 
 use App\Models\CbdArrival;
-use App\Exceptions\CustomException;
 use Illuminate\Support\Facades\Gate;
 use App\Helpers\AuthHelper;
 
 class ArrivalQuery
 {
     /**
-     * Verifie si un arrivage existe ou leve une exception.
-     *
-     * @param int $arrivalId
-     * @return CbdArrival
-     * @throws CustomException
-     */
-    private function findArrivalOrFail($arrivalId)
-    {
-        $arrival = CbdArrival::with('products')->find($arrivalId);
-        if (!$arrival) {
-            throw new CustomException('Arrivage introuvable', "Aucun arrivage n'a ete trouve avec cet identifiant.");
-        }
-        return $arrival;
-    }
-
-    /**
-     * Recupere la liste des arrivages.
-     *
-     * @param mixed $root
-     * @param array $args
-     * @return array
-     * @throws CustomException
+     * Retourne un builder d'arrivages pour être consommé par @paginate.
+     * - Admin: renvoie tous les arrivages
+     * - Non-admin: renvoie une requête vide (aucun résultat)
      */
     public function arrivals($root, array $args)
     {
-        $user = AuthHelper::ensureAuthenticated();
+        AuthHelper::ensureAuthenticated();
 
-        if (!Gate::allows('viewAny', CbdArrival::class)) {
-            throw new CustomException('Acces refuse', 'Vous n\'avez pas les permissions necessaires pour voir la liste des arrivages.');
+        if (Gate::allows('viewAny', CbdArrival::class)) {
+            // Builder avec relations nécessaires
+            return CbdArrival::query()->with('products');
         }
 
-        try {
-            $arrivals = CbdArrival::with('products')->get();
-            // Retourne directement le tableau d'arrivages tel qu'attendu par le schema GraphQL
-            return $arrivals;
-        } catch (\Exception $e) {
-            throw new CustomException('Erreur interne', 'Impossible de recuperer la liste des arrivages.');
-        }
+        // Requête qui ne retourne rien pour les non-admins
+        return CbdArrival::query()->whereRaw('1 = 0');
     }
 
     /**
-     * Recupere un arrivage specifique.
-     *
-     * @param mixed $root
-     * @param array $args
-     * @return CbdArrival
-     * @throws CustomException
+     * Récupère un arrivage spécifique (utilisé par le champ arrival).
      */
     public function arrival($root, array $args)
     {
-        $user = AuthHelper::ensureAuthenticated();
+        AuthHelper::ensureAuthenticated();
 
-        $arrival = $this->findArrivalOrFail($args['arrival_id']);
-
-        if (!Gate::allows('view', $arrival)) {
-            throw new CustomException('Acces refuse', 'Vous n\'avez pas les permissions necessaires pour voir cet arrivage.');
+        $arrival = CbdArrival::with('products')->find($args['arrival_id']);
+        if (!$arrival) {
+            return null;
         }
 
-        // Retourne directement l'arrivage tel qu'attendu par le schema GraphQL
+        if (!Gate::allows('view', $arrival)) {
+            return null;
+        }
+
         return $arrival;
     }
 }

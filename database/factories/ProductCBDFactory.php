@@ -141,7 +141,9 @@ class ProductCBDFactory extends Factory
     public function configure(): static
     {
         return $this->afterCreating(function (ProductCBD $product) {
-            // La catégorie est déjà assignée via category_id
+            // Assure au moins une catégorie via la relation many-to-many
+            $category = Category::inRandomOrder()->first() ?? Category::factory()->create();
+            $product->categories()->syncWithoutDetaching([$category->id]);
         });
     }
 

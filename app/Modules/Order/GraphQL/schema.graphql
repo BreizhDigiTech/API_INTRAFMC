@@ -20,6 +20,7 @@ type OrderProductPivot {
   unit_price: Float!
 }
 
+
 input UpdateOrderStatusInput {
   id: ID!
   status: String!
@@ -54,6 +55,5 @@ extend type Query {
   # Détail d'une commande - Avec vérification de propriété
   order(id: ID!): Order
     @guard
-    @can(ability: "view", model: "App\\Models\\Order")
-    @find(model: "App\\Models\\Order")
+  @field(resolver: "App\\Modules\\Order\\GraphQL\\Queries\\OrderQuery@order")
 }

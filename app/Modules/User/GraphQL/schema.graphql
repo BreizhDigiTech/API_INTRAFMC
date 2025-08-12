@@ -8,7 +8,6 @@ extend type Query {
     # Récupère un utilisateur spécifique
     user(id: ID!): User
         @guard(with: ["api"])
-        @can(ability: "view", model: "App\\Models\\User")
         @field(resolver: "App\\Modules\\User\\GraphQL\\Queries\\UserQuery@user")
 }
 

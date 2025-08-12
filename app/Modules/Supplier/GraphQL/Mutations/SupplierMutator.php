@@ -34,7 +34,25 @@ class SupplierMutator
         }
 
         try {
-            $supplier = $this->service->createSupplier($args);
+            // Normalisation/validation minimale
+            $payload = [
+                'name' => isset($args['name']) ? trim((string) $args['name']) : null,
+                'email' => isset($args['email']) ? trim((string) $args['email']) : null,
+                'phone' => isset($args['phone']) ? trim((string) $args['phone']) : null,
+                'address' => isset($args['address']) ? trim((string) $args['address']) : null,
+                'website' => isset($args['website']) ? trim((string) $args['website']) : null,
+                'contact_person' => isset($args['contact_person']) ? trim((string) $args['contact_person']) : null,
+                'description' => isset($args['description']) ? trim((string) $args['description']) : null,
+            ];
+
+            if (!$payload['name']) {
+                throw new CustomException('Validation', 'Le nom du fournisseur est obligatoire.');
+            }
+            if ($payload['email'] && !filter_var($payload['email'], FILTER_VALIDATE_EMAIL)) {
+                throw new CustomException('Validation', 'Le champ email n\'est pas valide.');
+            }
+
+            $supplier = $this->service->createSupplier($payload);
             // Retourne directement le fournisseur tel qu'attendu par le schema GraphQL
             return $supplier;
         } catch (\Exception $e) {

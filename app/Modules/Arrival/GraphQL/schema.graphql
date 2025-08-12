@@ -23,12 +23,14 @@ extend type Mutation {
 extend type Query {
   arrivals(first: Int, page: Int): [CbdArrival!]!
     @guard(with: ["api"])
-    @can(ability: "viewAny", model: "App\\Models\\CbdArrival")
-    @paginate(defaultCount: 15, maxCount: 50, model: "App\\Models\\CbdArrival")
+    @paginate(
+      defaultCount: 15,
+      maxCount: 50,
+      builder: "App\\Modules\\Arrival\\GraphQL\\Queries\\ArrivalQuery@arrivals"
+    )
 
   arrival(arrival_id: ID!): CbdArrival
     @guard(with: ["api"])
-    @can(ability: "view", model: "App\\Models\\CbdArrival")
     @field(resolver: "App\\Modules\\Arrival\\GraphQL\\Queries\\ArrivalQuery@arrival")
 }
 

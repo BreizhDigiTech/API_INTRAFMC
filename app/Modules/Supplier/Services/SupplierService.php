@@ -9,7 +9,16 @@ class SupplierService
 {
     public function createSupplier($data)
     {
-        return Supplier::create($data);
+        $payload = [
+            'name' => $data['name'] ?? null,
+            'email' => $data['email'] ?? null,
+            'phone' => $data['phone'] ?? null,
+            'address' => $data['address'] ?? null,
+            'website' => $data['website'] ?? null,
+            'contact_person' => $data['contact_person'] ?? null,
+            'description' => $data['description'] ?? null,
+        ];
+        return Supplier::create($payload);
     }
 
     public function attachSupplierToProduct($supplier_id, $product_id)

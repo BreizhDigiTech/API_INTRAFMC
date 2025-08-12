@@ -25,8 +25,7 @@ Une API GraphQL construite avec Laravel et Lighthouse pour la gestion interne de
 - ✅ **Documentation front-end** (Complète et à jour)
 
 ### **Tests & Qualité**
-- ✅ **Tests Feature** (GraphQL, authentification, business logic)
-- ✅ **Tests Unit** (Modèles, factories, relations)
+- ✅ **112 tests passent** (Feature + Unit)
 - ✅ **Validation** (Données d'entrée, permissions, erreurs)
 - ✅ **Cache management** (Clear, optimize, performance)
 
@@ -212,14 +211,9 @@ php artisan test tests/Feature/GraphQL/CartTest.php       # Panier
 php artisan test --coverage
 ```
 
-### Scripts de test disponibles
-
-**PowerShell (Windows)** :
-```powershell
-.\run-tests.ps1              # Tous les tests
-.\run-tests.ps1 graphql      # Tests GraphQL uniquement
-.\run-tests.ps1 coverage     # Avec couverture de code
-```
+### Astuces tests (Windows)
+- Exécuter tous les tests: `php artisan test`
+- Effacer le cache Lighthouse avant un run si les schémas changent: `php artisan lighthouse:clear-cache`
 
 **Tests inclus** :
 - ✅ Authentification (login, logout, profil utilisateur)
@@ -273,7 +267,7 @@ php artisan test --coverage
    - ✅ **JWT sécurisé** - Tokens avec expiration automatique
 
 2. **Architecture & Code Quality**
-   - ✅ **Tests complets** - 74 tests Feature + Unit 
+   - ✅ **Tests complets** - 112 tests (Feature + Unit)
    - ✅ **Documentation API** - Guide front-end complet
    - ✅ **Schémas GraphQL** - Uniformisés avec Lighthouse 6.59.0
    - ✅ **Policies cohérentes** - Permissions granulaires
@@ -289,7 +283,7 @@ php artisan test --coverage
 ### 🎯 **État Actuel : PRODUCTION READY**
 - 🚀 **Version 2.0.0** - Cohérence complète validée
 - ✅ **9 modules GraphQL** fonctionnels
-- ✅ **74 tests** passent
+- ✅ **112 tests** passent
 - ✅ **Documentation** complète
 - ✅ **Architecture** modulaire et maintenable
    - [ ] Ajouter des tests unitaires pour chaque module
@@ -313,6 +307,14 @@ php artisan test --coverage
 - `php artisan serve` - Démarrer le serveur de développement
 - `php artisan migrate` - Exécuter les migrations
 - `php artisan test` - Exécuter les tests
+
+## 🧭 GraphQL: schéma, pagination et autorisation
+
+- Schéma agrégé: `graphql/schema.graphql` importe tous les schémas modules via `#import`.
+- Pagination native Lighthouse: utiliser `@paginate` sans déclarer des types Paginator manuels. Lighthouse les génère (ex: `ProductCBDPaginator`).
+- Listes soumises à autorisation: préférer `@paginate(builder: "...@method")` et retourner un Builder filtré selon les permissions (par ex. liste vide pour un rôle non autorisé).
+- Requêtes unitaires sécurisées: utiliser un resolver explicite (ex: `UserQuery@user`) qui charge le modèle puis vérifie la Policy avec `Gate::allows('view', $model)`. Éviter `@can` seul quand le modèle n'est pas encore résolu.
+- Cache schéma: après modifications de schéma, exécuter `php artisan lighthouse:clear-cache`.
 
 ## 📁 Structure du projet
 
