@@ -21,11 +21,16 @@ class CategoryTest extends TestCase
 
         $query = '
             query {
-                categories {
-                    id
-                    name
-                    description
-                    created_at
+                categories(first: 10) {
+                    data {
+                        id
+                        name
+                        description
+                        created_at
+                    }
+                    paginatorInfo {
+                        total
+                    }
                 }
             }
         ';
@@ -38,17 +43,22 @@ class CategoryTest extends TestCase
         $response->assertJsonStructure([
             'data' => [
                 'categories' => [
-                    '*' => [
-                        'id',
-                        'name',
-                        'description',
-                        'created_at'
+                    'data' => [
+                        '*' => [
+                            'id',
+                            'name',
+                            'description',
+                            'created_at'
+                        ]
+                    ],
+                    'paginatorInfo' => [
+                        'total'
                     ]
                 ]
             ]
         ]);
 
-        $this->assertCount(3, $response->json('data.categories'));
+        $this->assertCount(3, $response->json('data.categories.data'));
     }
 
     /**

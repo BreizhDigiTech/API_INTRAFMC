@@ -11,7 +11,7 @@ class SupplierPolicy
         return $authUser->is_admin;
     }
 
-    public function view(User $authUser, Supplier $supplier): bool
+    public function view(User $authUser, Supplier $supplier = null): bool
     {
         return $authUser->is_admin;
     }

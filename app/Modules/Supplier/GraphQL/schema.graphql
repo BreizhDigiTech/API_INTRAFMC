@@ -13,6 +13,7 @@ extend type ProductCBD {
 extend type Query {
   suppliers: [Supplier!]! 
     @guard(with: ["api"]) 
+    @can(ability: "viewAny", model: "App\\Models\\Supplier")
     @paginate(defaultCount: 20, maxCount: 100, model: "App\\Models\\Supplier")
   supplier(id: ID!): Supplier 
     @guard(with: ["api"]) 

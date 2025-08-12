@@ -23,7 +23,7 @@ class ProductCBDTest extends TestCase
 
         $query = '
             query {
-                products {
+                products(first: 10) {
                     data {
                         id
                         name
@@ -32,10 +32,10 @@ class ProductCBDTest extends TestCase
                         stock
                         category_id
                     }
-                    pagination {
+                    paginatorInfo {
                         total
-                        per_page
-                        current_page
+                        perPage
+                        currentPage
                     }
                 }
             }
@@ -59,10 +59,10 @@ class ProductCBDTest extends TestCase
                             'category_id',
                         ]
                     ],
-                    'pagination' => [
+                    'paginatorInfo' => [
                         'total',
-                        'per_page',
-                        'current_page',
+                        'perPage',
+                        'currentPage',
                     ]
                 ]
             ]
@@ -218,7 +218,7 @@ class ProductCBDTest extends TestCase
 
         // Assert
         $this->assertGraphQLSuccess($response);
-        $response->assertJsonPath('data.deleteProduct.message', 'Product deleted successfully');
+        $response->assertJsonPath('data.deleteProduct.message', 'Produit supprime avec succes.');
 
         // Check database
         $this->assertDatabaseMissing('cbd_products', [

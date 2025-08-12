@@ -11,7 +11,7 @@ class CategoryPolicy
         return true; // Tous les utilisateurs peuvent voir les catégories
     }
 
-    public function view(User $authUser, Category $category): bool
+    public function view(User $authUser, Category $category = null): bool
     {
         return true; // Tous les utilisateurs peuvent voir une catégorie
     }

@@ -28,6 +28,28 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Fichiers temporaires et de nettoyage
+*.tmp
+*.backup
+*.old
+*~
+*.bak
+cleanup.*
+test_*.php
+fix_*.php
+modernize_*.php
+*_temp.php
+nettoyage.*
+
+# Documentation temporaire
+NETTOYAGE_*.md
+RAPPORT_*.md
+*_GUIDE.md
+TEMP_*.md
+
+# Scripts temporaires
+run-tests.*
 *.backup
 *.tmp
 *.temp

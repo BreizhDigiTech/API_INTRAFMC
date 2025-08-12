@@ -31,9 +31,7 @@ class ArrivalProductCbdTest extends TestCase
             'stock' => 100
         ]);
     }
-
-    /** @test */
-    public function it_can_create_arrival_product()
+    public function test_it_can_create_arrival_product()
     {
         $arrivalProduct = ArrivalProductCbd::create([
             'arrival_id' => $this->arrival->id,
@@ -48,9 +46,7 @@ class ArrivalProductCbdTest extends TestCase
         $this->assertEquals(50, $arrivalProduct->quantity);
         $this->assertEquals(25.99, $arrivalProduct->unit_price);
     }
-
-    /** @test */
-    public function it_belongs_to_arrival()
+    public function test_it_belongs_to_arrival()
     {
         $arrivalProduct = ArrivalProductCbd::create([
             'arrival_id' => $this->arrival->id,
@@ -62,9 +58,7 @@ class ArrivalProductCbdTest extends TestCase
         $this->assertInstanceOf(CbdArrival::class, $arrivalProduct->arrival);
         $this->assertEquals($this->arrival->id, $arrivalProduct->arrival->id);
     }
-
-    /** @test */
-    public function it_belongs_to_product()
+    public function test_it_belongs_to_product()
     {
         $arrivalProduct = ArrivalProductCbd::create([
             'arrival_id' => $this->arrival->id,
@@ -77,9 +71,7 @@ class ArrivalProductCbdTest extends TestCase
         $this->assertEquals($this->product->id, $arrivalProduct->product->id);
         $this->assertEquals($this->product->name, $arrivalProduct->product->name);
     }
-
-    /** @test */
-    public function it_calculates_total_price()
+    public function test_it_calculates_total_price()
     {
         $arrivalProduct = ArrivalProductCbd::create([
             'arrival_id' => $this->arrival->id,
@@ -93,9 +85,7 @@ class ArrivalProductCbdTest extends TestCase
         
         $this->assertEquals(125.00, $totalPrice);
     }
-
-    /** @test */
-    public function it_can_have_multiple_products_for_same_arrival()
+    public function test_it_can_have_multiple_products_for_same_arrival()
     {
         $product2 = ProductCBD::factory()->create([
             'category_id' => $this->category->id,
@@ -125,9 +115,7 @@ class ArrivalProductCbdTest extends TestCase
         $this->assertTrue($products->contains('product_id', $this->product->id));
         $this->assertTrue($products->contains('product_id', $product2->id));
     }
-
-    /** @test */
-    public function it_validates_required_fields()
+    public function test_it_validates_required_fields()
     {
         // Tester que les champs requis sont bien obligatoires
         $this->expectException(\Illuminate\Database\QueryException::class);
@@ -136,9 +124,7 @@ class ArrivalProductCbdTest extends TestCase
             // Manque arrival_id, product_id, quantity, unit_price
         ]);
     }
-
-    /** @test */
-    public function it_validates_positive_quantity()
+    public function test_it_validates_positive_quantity()
     {
         $arrivalProduct = ArrivalProductCbd::create([
             'arrival_id' => $this->arrival->id,
@@ -153,9 +139,7 @@ class ArrivalProductCbdTest extends TestCase
         // Mais on peut ajouter une validation métier
         $this->assertGreaterThanOrEqual(0, $arrivalProduct->quantity);
     }
-
-    /** @test */
-    public function it_validates_positive_unit_price()
+    public function test_it_validates_positive_unit_price()
     {
         $arrivalProduct = ArrivalProductCbd::create([
             'arrival_id' => $this->arrival->id,
@@ -166,9 +150,7 @@ class ArrivalProductCbdTest extends TestCase
 
         $this->assertGreaterThan(0, $arrivalProduct->unit_price);
     }
-
-    /** @test */
-    public function it_can_update_quantity_and_price()
+    public function test_it_can_update_quantity_and_price()
     {
         $arrivalProduct = ArrivalProductCbd::create([
             'arrival_id' => $this->arrival->id,
@@ -186,9 +168,7 @@ class ArrivalProductCbdTest extends TestCase
         $this->assertEquals(25, $arrivalProduct->fresh()->quantity);
         $this->assertEquals(18.50, $arrivalProduct->fresh()->unit_price);
     }
-
-    /** @test */
-    public function it_can_delete_arrival_product()
+    public function test_it_can_delete_arrival_product()
     {
         $arrivalProduct = ArrivalProductCbd::create([
             'arrival_id' => $this->arrival->id,
@@ -203,9 +183,7 @@ class ArrivalProductCbdTest extends TestCase
         
         $this->assertDatabaseMissing('arrival_product_cbd', ['id' => $id]);
     }
-
-    /** @test */
-    public function it_cascades_delete_when_arrival_is_deleted()
+    public function test_it_cascades_delete_when_arrival_is_deleted()
     {
         $arrivalProduct = ArrivalProductCbd::create([
             'arrival_id' => $this->arrival->id,
@@ -222,9 +200,7 @@ class ArrivalProductCbdTest extends TestCase
         // Vérifier que le produit d'arrivage a été supprimé aussi
         $this->assertDatabaseMissing('arrival_product_cbd', ['id' => $arrivalProductId]);
     }
-
-    /** @test */
-    public function it_cascades_delete_when_product_is_deleted()
+    public function test_it_cascades_delete_when_product_is_deleted()
     {
         $arrivalProduct = ArrivalProductCbd::create([
             'arrival_id' => $this->arrival->id,
@@ -241,9 +217,7 @@ class ArrivalProductCbdTest extends TestCase
         // Vérifier que le produit d'arrivage a été supprimé aussi
         $this->assertDatabaseMissing('arrival_product_cbd', ['id' => $arrivalProductId]);
     }
-
-    /** @test */
-    public function it_has_timestamps()
+    public function test_it_has_timestamps()
     {
         $arrivalProduct = ArrivalProductCbd::create([
             'arrival_id' => $this->arrival->id,
@@ -255,9 +229,7 @@ class ArrivalProductCbdTest extends TestCase
         $this->assertNotNull($arrivalProduct->created_at);
         $this->assertNotNull($arrivalProduct->updated_at);
     }
-
-    /** @test */
-    public function it_can_scope_by_arrival()
+    public function test_it_can_scope_by_arrival()
     {
         $arrival2 = CbdArrival::factory()->create();
         

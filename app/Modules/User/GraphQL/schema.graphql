@@ -2,11 +2,13 @@ extend type Query {
     # Liste des utilisateurs (accessible uniquement par les administrateurs)
     users(first: Int, page: Int): [User!]!
         @guard(with: ["api"])
+        @can(ability: "viewAny", model: "App\\Models\\User")
         @paginate(defaultCount: 15, maxCount: 50, model: "App\\Models\\User")
 
     # Récupère un utilisateur spécifique
     user(id: ID!): User
         @guard(with: ["api"])
+        @can(ability: "view", model: "App\\Models\\User")
         @field(resolver: "App\\Modules\\User\\GraphQL\\Queries\\UserQuery@user")
 }
 

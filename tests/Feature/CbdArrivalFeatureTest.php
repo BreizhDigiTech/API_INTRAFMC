@@ -39,9 +39,7 @@ class CbdArrivalFeatureTest extends TestCase
             'name' => 'Test Category'
         ]);
     }
-
-    /** @test */
-    public function admin_can_view_arrivals_list()
+    public function test_admin_can_view_arrivals_list()
     {
         $this->actingAs($this->admin);
         
@@ -55,9 +53,7 @@ class CbdArrivalFeatureTest extends TestCase
         $this->assertCount(3, $allArrivals);
         $this->assertEquals($arrivals->pluck('id')->sort(), $allArrivals->pluck('id')->sort());
     }
-
-    /** @test */
-    public function admin_can_create_arrival()
+    public function test_admin_can_create_arrival()
     {
         $this->actingAs($this->admin);
         
@@ -71,9 +67,7 @@ class CbdArrivalFeatureTest extends TestCase
         $this->assertInstanceOf(CbdArrival::class, $arrival);
         $this->assertDatabaseHas('cbd_arrivals', $arrivalData);
     }
-
-    /** @test */
-    public function admin_can_update_arrival_status()
+    public function test_admin_can_update_arrival_status()
     {
         $this->actingAs($this->admin);
         
@@ -89,9 +83,7 @@ class CbdArrivalFeatureTest extends TestCase
             'status' => 'validated'
         ]);
     }
-
-    /** @test */
-    public function admin_can_add_products_to_arrival()
+    public function test_admin_can_add_products_to_arrival()
     {
         $this->actingAs($this->admin);
         
@@ -117,8 +109,6 @@ class CbdArrivalFeatureTest extends TestCase
         // Vérifier la relation
         $this->assertCount(1, $arrival->fresh()->products);
     }
-
-    /** @test */
     public function validating_arrival_updates_product_stocks()
     {
         $this->actingAs($this->admin);
@@ -162,9 +152,7 @@ class CbdArrivalFeatureTest extends TestCase
         $this->assertEquals(130, $product1->fresh()->stock); // 100 + 30
         $this->assertEquals(75, $product2->fresh()->stock);  // 50 + 25
     }
-
-    /** @test */
-    public function non_admin_cannot_access_arrivals()
+    public function test_non_admin_cannot_access_arrivals()
     {
         $this->actingAs($this->user);
         
@@ -172,8 +160,6 @@ class CbdArrivalFeatureTest extends TestCase
         // Ceci dépend de votre implémentation des politiques
         $this->assertTrue($this->user->is_admin === false);
     }
-
-    /** @test */
     public function arrival_with_products_calculates_correct_total()
     {
         $arrival = CbdArrival::factory()->create();
@@ -208,8 +194,6 @@ class CbdArrivalFeatureTest extends TestCase
 
         $this->assertEquals(450.00, $totalCost); // (10 * 25) + (5 * 40)
     }
-
-    /** @test */
     public function arrival_can_be_filtered_by_status()
     {
         // Créer des arrivages avec différents statuts
@@ -223,8 +207,6 @@ class CbdArrivalFeatureTest extends TestCase
         $this->assertCount(3, $pending);
         $this->assertCount(2, $validated);
     }
-
-    /** @test */
     public function arrival_can_be_filtered_by_date_range()
     {
         // Créer des arrivages avec différentes dates
@@ -242,8 +224,6 @@ class CbdArrivalFeatureTest extends TestCase
         $this->assertCount(1, $recentArrivals);
         $this->assertEquals($recentArrival->id, $recentArrivals->first()->id);
     }
-
-    /** @test */
     public function arrival_deletion_removes_associated_products()
     {
         $arrival = CbdArrival::factory()->create();
@@ -266,8 +246,6 @@ class CbdArrivalFeatureTest extends TestCase
         // Vérifier que les produits associés ont été supprimés
         $this->assertDatabaseMissing('arrival_product_cbd', ['id' => $arrivalProductId]);
     }
-
-    /** @test */
     public function arrival_status_enum_validation()
     {
         // Tester les statuts valides
@@ -278,16 +256,12 @@ class CbdArrivalFeatureTest extends TestCase
             $this->assertEquals($status, $arrival->status);
         }
     }
-
-    /** @test */
     public function arrival_amount_must_be_positive()
     {
         $arrival = CbdArrival::factory()->create(['amount' => 100.50]);
         
         $this->assertGreaterThan(0, $arrival->amount);
     }
-
-    /** @test */
     public function multiple_validations_update_stocks_correctly()
     {
         // Tester que valider plusieurs arrivages fonctionne correctement

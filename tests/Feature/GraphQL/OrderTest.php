@@ -108,16 +108,18 @@ class OrderTest extends TestCase
 
         $query = '
             query {
-                orders {
-                    id
-                    total
-                    status
-                    products {
+                myOrders(first: 10) {
+                    data {
                         id
-                        name
-                        pivot {
-                            quantity
-                            unit_price
+                        total
+                        status
+                        products {
+                            id
+                            name
+                            pivot {
+                                quantity
+                                unit_price
+                            }
                         }
                     }
                 }
@@ -129,21 +131,23 @@ class OrderTest extends TestCase
 
         // Assert
         $this->assertGraphQLSuccess($response);
-        $response->assertJsonPath('data.orders.0.total', 25.5);
+        $response->assertJsonPath('data.myOrders.data.0.total', 25.5);
         $response->assertJsonStructure([
             'data' => [
-                'orders' => [
-                    '*' => [
-                        'id',
-                        'total',
-                        'status',
-                        'products' => [
-                            '*' => [
-                                'id',
-                                'name',
-                                'pivot' => [
-                                    'quantity',
-                                    'unit_price'
+                'myOrders' => [
+                    'data' => [
+                        '*' => [
+                            'id',
+                            'total',
+                            'status',
+                            'products' => [
+                                '*' => [
+                                    'id',
+                                    'name',
+                                    'pivot' => [
+                                        'quantity',
+                                        'unit_price'
+                                    ]
                                 ]
                             ]
                         ]

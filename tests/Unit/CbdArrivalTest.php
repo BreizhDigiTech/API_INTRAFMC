@@ -25,9 +25,7 @@ class CbdArrivalTest extends TestCase
             'description' => 'Category for testing'
         ]);
     }
-
-    /** @test */
-    public function it_can_create_an_arrival()
+    public function test_it_can_create_an_arrival()
     {
         $arrival = CbdArrival::factory()->create([
             'amount' => 1500.50,
@@ -43,9 +41,7 @@ class CbdArrivalTest extends TestCase
             'status' => 'pending'
         ]);
     }
-
-    /** @test */
-    public function it_has_default_pending_status()
+    public function test_it_has_default_pending_status()
     {
         $arrival = CbdArrival::factory()->create([
             'amount' => 1000.00
@@ -54,9 +50,7 @@ class CbdArrivalTest extends TestCase
         // Vérifier que le statut par défaut est bien appliqué via la base de données
         $this->assertContains($arrival->status, ['pending', 'validated']);
     }
-
-    /** @test */
-    public function it_can_have_products_associated()
+    public function test_it_can_have_products_associated()
     {
         $arrival = CbdArrival::factory()->create();
         
@@ -91,9 +85,7 @@ class CbdArrivalTest extends TestCase
         $this->assertEquals(20, $arrival->products->first()->quantity);
         $this->assertEquals(15.50, $arrival->products->first()->unit_price);
     }
-
-    /** @test */
-    public function it_updates_product_stock_when_validated()
+    public function test_it_updates_product_stock_when_validated()
     {
         // Créer un arrivage en statut pending
         $arrival = CbdArrival::factory()->create([
@@ -124,9 +116,7 @@ class CbdArrivalTest extends TestCase
         // Vérifier que le stock a été mis à jour
         $this->assertEquals(150, $product->fresh()->stock);
     }
-
-    /** @test */
-    public function it_updates_multiple_products_stock_when_validated()
+    public function test_it_updates_multiple_products_stock_when_validated()
     {
         // Créer un arrivage
         $arrival = CbdArrival::factory()->create([
@@ -166,9 +156,7 @@ class CbdArrivalTest extends TestCase
         $this->assertEquals(130, $product1->fresh()->stock); // 100 + 30
         $this->assertEquals(70, $product2->fresh()->stock);  // 50 + 20
     }
-
-    /** @test */
-    public function it_does_not_update_stock_when_status_is_not_validated()
+    public function test_it_does_not_update_stock_when_status_is_not_validated()
     {
         // Créer un arrivage
         $arrival = CbdArrival::factory()->create([
@@ -195,9 +183,7 @@ class CbdArrivalTest extends TestCase
         // Vérifier que le stock n'a pas changé
         $this->assertEquals(100, $product->fresh()->stock);
     }
-
-    /** @test */
-    public function it_handles_transaction_rollback_on_stock_update_failure()
+    public function test_it_handles_transaction_rollback_on_stock_update_failure()
     {
         // Créer un arrivage
         $arrival = CbdArrival::factory()->create([
@@ -233,9 +219,7 @@ class CbdArrivalTest extends TestCase
         // Le stock ne devrait pas avoir changé à cause du rollback
         $this->assertEquals(100, $product->fresh()->stock);
     }
-
-    /** @test */
-    public function it_can_be_filtered_by_status()
+    public function test_it_can_be_filtered_by_status()
     {
         // Créer des arrivages avec différents statuts
         $pendingArrival = CbdArrival::factory()->create(['status' => 'pending']);
@@ -250,9 +234,7 @@ class CbdArrivalTest extends TestCase
         $this->assertEquals($pendingArrival->id, $pendingArrivals->first()->id);
         $this->assertEquals($validatedArrival->id, $validatedArrivals->first()->id);
     }
-
-    /** @test */
-    public function it_calculates_total_cost_from_products()
+    public function test_it_calculates_total_cost_from_products()
     {
         $arrival = CbdArrival::factory()->create();
         
@@ -286,25 +268,19 @@ class CbdArrivalTest extends TestCase
 
         $this->assertEquals(305.00, $totalCost); // (10 * 15.50) + (5 * 30.00)
     }
-
-    /** @test */
-    public function it_has_proper_fillable_attributes()
+    public function test_it_has_proper_fillable_attributes()
     {
         $arrival = new CbdArrival();
         
         $this->assertEquals(['amount', 'status'], $arrival->getFillable());
     }
-
-    /** @test */
-    public function it_uses_correct_table_name()
+    public function test_it_uses_correct_table_name()
     {
         $arrival = new CbdArrival();
         
         $this->assertEquals('cbd_arrivals', $arrival->getTable());
     }
-
-    /** @test */
-    public function it_can_create_arrival_with_factory()
+    public function test_it_can_create_arrival_with_factory()
     {
         $arrival = CbdArrival::factory()->create();
         
@@ -312,9 +288,7 @@ class CbdArrivalTest extends TestCase
         $this->assertIsFloat($arrival->amount);
         $this->assertContains($arrival->status, ['pending', 'validated']);
     }
-
-    /** @test */
-    public function it_validates_status_enum_values()
+    public function test_it_validates_status_enum_values()
     {
         // Tester les valeurs valides
         $validStatuses = ['pending', 'validated'];
