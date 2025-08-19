@@ -33,7 +33,6 @@ class CrudCompletenessTest extends TestCase
         ]);
     }
 
-    /** @test */
     public function test_supplier_crud_operations_are_complete()
     {
         $this->actingAs($this->adminUser, 'api');
@@ -137,7 +136,6 @@ class CrudCompletenessTest extends TestCase
         ]);
     }
 
-    /** @test */
     public function test_register_email_verification_operations()
     {
         // Test REGISTER
@@ -198,7 +196,6 @@ class CrudCompletenessTest extends TestCase
         ]);
     }
 
-    /** @test */
     public function test_cart_operations_include_clear_cart()
     {
         $this->actingAs($this->user, 'api');
@@ -252,7 +249,6 @@ class CrudCompletenessTest extends TestCase
         ]);
     }
 
-    /** @test */
     public function test_all_modules_have_required_crud_operations()
     {
         $this->actingAs($this->adminUser, 'api');

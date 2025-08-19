@@ -282,10 +282,11 @@ class CbdArrivalTest extends TestCase
     }
     public function test_it_can_create_arrival_with_factory()
     {
-        $arrival = CbdArrival::factory()->create();
+    $arrival = CbdArrival::factory()->create();
         
-        $this->assertInstanceOf(CbdArrival::class, $arrival);
-        $this->assertIsFloat($arrival->amount);
+    $this->assertInstanceOf(CbdArrival::class, $arrival);
+    // amount est stocké en DECIMAL(10,2) -> casté en string numérique par Laravel
+    $this->assertIsNumeric($arrival->amount);
         $this->assertContains($arrival->status, ['pending', 'validated']);
     }
     public function test_it_validates_status_enum_values()

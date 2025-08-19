@@ -82,7 +82,7 @@ class Order extends Model
     {
         $statusMap = [
             'pending' => 'En attente',
-            'delivered' => 'Livrée',
+            'validated' => 'Validée',
             'cancelled' => 'Annulée',
         ];
 

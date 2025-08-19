@@ -135,7 +135,8 @@ class OrderService
      */
     public function updateOrderStatus($orderId, $newStatus)
     {
-        $validStatuses = ['pending', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded'];
+    // Statuts alignés avec la BDD (ENUM: pending, validated, cancelled)
+    $validStatuses = ['pending', 'validated', 'cancelled'];
         
         if (!in_array($newStatus, $validStatuses)) {
             throw new CustomException(
@@ -147,13 +148,11 @@ class OrderService
         $order = Order::findOrFail($orderId);
         
         // Logique de transition de statut
+        // Transitions simples compatibles avec l'ENUM
         $validTransitions = [
-            'pending' => ['processing', 'cancelled'],
-            'processing' => ['shipped', 'cancelled'],
-            'shipped' => ['delivered'],
-            'delivered' => ['refunded'],
-            'cancelled' => [], // Pas de transition depuis annulé
-            'refunded' => [] // Pas de transition depuis remboursé
+            'pending' => ['validated', 'cancelled'],
+            'validated' => [],
+            'cancelled' => [],
         ];
 
         if (!in_array($newStatus, $validTransitions[$order->status] ?? [])) {

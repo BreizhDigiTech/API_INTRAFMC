@@ -11,6 +11,12 @@ class CbdArrival extends Model
     protected $table = 'cbd_arrivals';
     protected $fillable = ['amount', 'status'];
 
+    protected $casts = [
+        'amount' => 'decimal:2',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+    ];
+
     public function products()
     {
         return $this->hasMany(ArrivalProductCbd::class, 'arrival_id');

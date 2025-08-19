@@ -28,7 +28,7 @@ class ProductCBD extends Model
     ];
 
     protected $casts = [
-        'price' => 'float',
+        'price' => 'decimal:2',
         'stock' => 'integer',
         'images' => 'array',
         'image_metadata' => 'array',
