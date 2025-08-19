@@ -17,6 +17,9 @@ extend type Mutation {
         id: ID!,
         name: String,
         email: String,
+        phone: String,
+        address: String,
+        birth_date: Date,
         is_active: Boolean,
         is_admin: Boolean,
         password: String,
@@ -35,6 +38,9 @@ extend type Mutation {
         id: ID!,
         name: String,
         email: String,
+        phone: String,
+        address: String,
+        birth_date: Date,
         avatar: String
     ): User
         @guard(with: ["api"])

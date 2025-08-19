@@ -37,7 +37,7 @@ class OrderQuery
     }
 
     /**
-     * Retourne une commande avec verifications d'autorisation.
+     * Retourne une commande avec verifications d'autorisation et tous ses détails.
      *
      * @param mixed $_
      * @param array $args
@@ -48,7 +48,9 @@ class OrderQuery
     {
         $user = AuthHelper::ensureAuthenticated();
 
-        $order = Order::find($args['id'] ?? null);
+        // Récupérer la commande avec toutes ses relations
+        $order = Order::withFullDetails()->find($args['id'] ?? null);
+        
         if (!$order) {
             throw new CustomException('Commande introuvable', 'Aucune commande trouvee avec cet ID.');
         }
@@ -58,5 +60,68 @@ class OrderQuery
         }
 
         return $order;
+    }
+
+    /**
+     * Récupère les détails d'une commande avec toutes les informations nécessaires
+     */
+    public function orderDetails($_, array $args)
+    {
+        $user = AuthHelper::ensureAuthenticated();
+        $orderId = $args['id'] ?? null;
+
+        if (!$orderId) {
+            throw new CustomException('ID manquant', 'L\'ID de la commande est requis.');
+        }
+
+        // Construire la requête avec eager loading optimisé
+        $query = Order::withFullDetails()
+            ->where('id', $orderId);
+
+        // Si l'utilisateur n'est pas admin, limiter aux ses propres commandes
+        if (!$user->is_admin) {
+            $query->where('user_id', $user->id);
+        }
+
+        $order = $query->first();
+
+        if (!$order) {
+            throw new CustomException(
+                'Commande introuvable', 
+                'Aucune commande trouvee avec cet ID ou vous n\'avez pas les permissions pour la voir.'
+            );
+        }
+
+        return $order;
+    }
+
+    /**
+     * Récupère les statistiques d'une commande
+     */
+    public function orderStats($_, array $args)
+    {
+        $user = AuthHelper::ensureAuthenticated();
+        $orderId = $args['id'] ?? null;
+
+        $order = Order::withFullDetails()->find($orderId);
+        
+        if (!$order) {
+            throw new CustomException('Commande introuvable', 'Aucune commande trouvee avec cet ID.');
+        }
+
+        if (!Gate::allows('view', $order)) {
+            throw new CustomException('Acces refuse', 'Vous n\'avez pas les permissions necessaires pour voir cette commande.');
+        }
+
+        return [
+            'order_id' => $order->id,
+            'total_items' => $order->total_items,
+            'product_count' => $order->product_count,
+            'total_amount' => $order->total,
+            'average_item_price' => $order->products->count() > 0 ? $order->total / $order->total_items : 0,
+            'created_at' => $order->created_at,
+            'status' => $order->status,
+            'formatted_status' => $order->formatted_status
+        ];
     }
 }

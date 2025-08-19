@@ -1,25 +1,68 @@
 type Order {
   id: ID!
+  user_id: Int!
   user: User!
   total: Float!
   status: String!
-  products: [OrderProduct!]!
   created_at: DateTime
   updated_at: DateTime
+  
+  # Relations avec les produits
+  products: [ProductCBD!]! @belongsToMany(relation: "products")
+  orderProducts: [OrderProduct!]!
+  
+  # Accesseurs calculés
+  total_items: Int!
+  product_count: Int!
+  formatted_status: String!
 }
 
 type OrderProduct {
   id: ID!
-  name: String!
-  price: Float!
-  pivot: OrderProductPivot
+  order_id: Int!
+  product_id: Int!
+  quantity: Int!
+  unit_price: Float!
+  created_at: DateTime
+  updated_at: DateTime
+  
+  # Relations
+  order: Order @belongsTo
+  product: ProductCBD @belongsTo
 }
 
 type OrderProductPivot {
   quantity: Int!
   unit_price: Float!
+  created_at: DateTime
+  updated_at: DateTime
 }
 
+# Expose pivot data when ProductCBD is returned through Order.products
+extend type ProductCBD {
+  pivot: OrderProductPivot @field(resolver: "App\\Modules\\Order\\GraphQL\\Resolvers\\OrderProductPivotResolver@resolve")
+}
+
+type OrderStats {
+  order_id: ID!
+  total_items: Int!
+  product_count: Int!
+  total_amount: Float!
+  average_item_price: Float!
+  created_at: DateTime!
+  status: String!
+  formatted_status: String!
+}
+
+type OrderSummary {
+  id: ID!
+  total: Float!
+  status: String!
+  user_name: String!
+  product_count: Int!
+  total_items: Int!
+  created_at: DateTime!
+}
 
 input UpdateOrderStatusInput {
   id: ID!
@@ -55,5 +98,15 @@ extend type Query {
   # Détail d'une commande - Avec vérification de propriété
   order(id: ID!): Order
     @guard
-  @field(resolver: "App\\Modules\\Order\\GraphQL\\Queries\\OrderQuery@order")
+    @field(resolver: "App\\Modules\\Order\\GraphQL\\Queries\\OrderQuery@order")
+
+  # Détails complets d'une commande avec toutes les relations
+  orderDetails(id: ID!): Order
+    @guard
+    @field(resolver: "App\\Modules\\Order\\GraphQL\\Queries\\OrderQuery@orderDetails")
+
+  # Statistiques d'une commande
+  orderStats(id: ID!): OrderStats
+    @guard
+    @field(resolver: "App\\Modules\\Order\\GraphQL\\Queries\\OrderQuery@orderStats")
 }

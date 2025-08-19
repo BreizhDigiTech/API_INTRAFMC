@@ -29,10 +29,30 @@ extend type Query {
     @find(model: "App\\Models\\Supplier")
 }
 
+input UpdateSupplierInput {
+  name: String
+  email: String
+  phone: String
+  address: String
+  website: String
+  contact_person: String
+  description: String
+}
+
 extend type Mutation {
   createSupplier(name: String!, email: String, phone: String, address: String, website: String, contact_person: String, description: String): Supplier
     @guard(with: ["api"])
     @field(resolver: "App\\Modules\\Supplier\\GraphQL\\Mutations\\SupplierMutator@createSupplier")
+
+  updateSupplier(id: ID!, input: UpdateSupplierInput!): Supplier
+    @guard(with: ["api"])
+    @can(ability: "update", model: "App\\Models\\Supplier", find: "id")
+    @field(resolver: "App\\Modules\\Supplier\\GraphQL\\Mutations\\SupplierMutator@updateSupplier")
+
+  deleteSupplier(id: ID!): DeleteResponse
+    @guard(with: ["api"])
+    @can(ability: "delete", model: "App\\Models\\Supplier", find: "id")
+    @field(resolver: "App\\Modules\\Supplier\\GraphQL\\Mutations\\SupplierMutator@deleteSupplier")
 
   attachSupplierToProduct(supplier_id: ID!, product_id: ID!): Supplier
     @guard(with: ["api"])

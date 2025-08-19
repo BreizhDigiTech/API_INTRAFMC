@@ -34,4 +34,34 @@ class SupplierService
         $supplier->products()->detach($product_id);
         return $supplier->load('products');
     }
+
+    public function updateSupplier($id, $data)
+    {
+        $supplier = Supplier::findOrFail($id);
+        
+        $payload = array_filter([
+            'name' => $data['name'] ?? null,
+            'email' => $data['email'] ?? null,
+            'phone' => $data['phone'] ?? null,
+            'address' => $data['address'] ?? null,
+            'website' => $data['website'] ?? null,
+            'contact_person' => $data['contact_person'] ?? null,
+            'description' => $data['description'] ?? null,
+        ], function($value) {
+            return $value !== null;
+        });
+        
+        $supplier->update($payload);
+        return $supplier->fresh();
+    }
+
+    public function deleteSupplier($id)
+    {
+        $supplier = Supplier::findOrFail($id);
+        
+        // Détacher tous les produits avant suppression
+        $supplier->products()->detach();
+        
+        return $supplier->delete();
+    }
 }

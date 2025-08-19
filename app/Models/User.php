@@ -31,8 +31,13 @@ class User extends Authenticatable implements JWTSubject
     protected $fillable = [
         'name',
         'email',
+        'phone',
+        'address',
+        'birth_date',
         'password',
         'avatar',
+        'avatar_original_name',
+        'avatar_size',
         'is_admin',
         'is_active',
         'email_verified_at',
@@ -54,9 +59,11 @@ class User extends Authenticatable implements JWTSubject
     {
         return [
             'email_verified_at' => 'datetime', // Cast en objet DateTime
+            'birth_date' => 'date', // Cast en date
             'password' => 'hashed', // Cast pour le hachage du mot de passe
             'is_admin' => 'boolean', // Cast en booléen
             'is_active' => 'boolean', // Cast en booléen
+            'avatar_size' => 'integer', // Cast en entier
         ];
     }
 

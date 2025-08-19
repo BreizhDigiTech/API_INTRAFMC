@@ -2,269 +2,234 @@
 
 namespace App\Services;
 
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
+use Illuminate\Http\UploadedFile;
 use Intervention\Image\ImageManager;
 use Intervention\Image\Drivers\Gd\Driver;
+use Illuminate\Support\Str;
 
 class FileManagerService
 {
-    // Types de fichiers autorisés
-    const ALLOWED_IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp'];
-    const ALLOWED_ANALYSIS_EXTENSIONS = ['pdf', 'doc', 'docx', 'txt'];
-    
-    // Tailles maximales (en bytes)
-    const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
-    const MAX_ANALYSIS_SIZE = 10 * 1024 * 1024; // 10MB
-    
-    // Variantes d'images
-    const IMAGE_SIZES = [
-        'thumbnail' => ['width' => 150, 'height' => 150],
-        'medium' => ['width' => 400, 'height' => 400],
-        'large' => ['width' => 800, 'height' => 600],
-    ];
+    private $imageManager;
 
-    /**
-     * Upload et traitement d'une image produit
-     */
-    public function storeProductImage(UploadedFile $file, int $productId): array
+    public function __construct()
     {
-        $this->validateImage($file);
-        
-        $folder = 'products/' . $productId;
-        $filename = $this->generateUniqueFilename($file);
-        $path = $folder . '/' . $filename;
-        
-        // Stockage de l'image originale
-        Storage::disk('product_images')->put($path, file_get_contents($file));
-        
-        // Génération des variantes
-        $variants = $this->generateImageVariants($file, 'product_images', $path);
-        
-        return [
-            'original' => $path,
-            'variants' => $variants,
-            'size' => $file->getSize(),
-            'mime_type' => $file->getMimeType(),
-            'original_name' => $file->getClientOriginalName(),
-        ];
+        $this->imageManager = new ImageManager(new Driver());
     }
 
     /**
-     * Upload d'un fichier d'analyse
+     * Store a product image with variants and validations.
+     * Returns array with original path, variants, size and mime_type.
      */
-    public function storeAnalysisFile(UploadedFile $file, int $productId): array
+    public function storeProductImage(UploadedFile $file, $productId = null): array
     {
-        $this->validateAnalysisFile($file);
-        
-        $folder = 'products/' . $productId;
-        $filename = $this->generateUniqueFilename($file);
-        $path = $folder . '/' . $filename;
-        
-        Storage::disk('analysis')->put($path, file_get_contents($file));
-        
+        // Validate extension
+        $ext = strtolower($file->getClientOriginalExtension());
+        $allowed = ['jpg', 'jpeg', 'png', 'webp'];
+        if (!in_array($ext, $allowed, true)) {
+            throw new \InvalidArgumentException("Format d'image non autorisé");
+        }
+
+        // Validate size (<= 5MB)
+        $sizeBytes = (int) $file->getSize();
+        if ($sizeBytes > 5 * 1024 * 1024) {
+            throw new \InvalidArgumentException('Image trop volumineuse');
+        }
+
+        // Base filename
+        $uuid = (string) Str::uuid();
+        $baseDir = $productId ? trim((string) $productId, '/').'/' : '';
+        $originalPath = $baseDir . $uuid . '.' . $ext;
+        $thumbPath = $baseDir . $uuid . '_thumbnail.' . $ext;
+        $mediumPath = $baseDir . $uuid . '_medium.' . $ext;
+
+        // Create optimized variants
+        $image = $this->imageManager->read($file->getRealPath());
+
+        // Original: optimized but original size limit
+        $originalData = $this->optimizeInterventionImage(clone $image, 1600, 1200, $ext);
+        Storage::disk('product_images')->put($originalPath, $originalData);
+
+        // Thumbnail
+        $thumbData = $this->optimizeInterventionImage(clone $image, 300, 300, $ext);
+        Storage::disk('product_images')->put($thumbPath, $thumbData);
+
+        // Medium
+        $mediumData = $this->optimizeInterventionImage(clone $image, 800, 600, $ext);
+        Storage::disk('product_images')->put($mediumPath, $mediumData);
+
+        return [
+            'original' => $originalPath,
+            'variants' => [
+                $thumbPath,
+                $mediumPath,
+            ],
+            'size' => $sizeBytes,
+            'mime_type' => $file->getMimeType() ?? 'image/'.$ext,
+        ];
+    }
+
+    /** Backward-compat upload method returning the original path only. */
+    public function uploadProductImage(UploadedFile $file, $productId = null): string
+    {
+        $result = $this->storeProductImage($file, $productId);
+        return $result['original'];
+    }
+
+    /**
+     * Store an analysis file (PDF/any) under analysis disk.
+     */
+    public function storeAnalysisFile(UploadedFile $file, $productId = null): array
+    {
+        $ext = strtolower($file->getClientOriginalExtension());
+        $filename = (string) Str::uuid() . '.' . $ext;
+        $baseDir = $productId ? trim((string) $productId, '/').'/' : '';
+        $path = $baseDir . $filename;
+
+        Storage::disk('analysis')->putFileAs($baseDir, $file, $filename);
+
         return [
             'path' => $path,
-            'size' => $file->getSize(),
-            'mime_type' => $file->getMimeType(),
+            'size' => (int) $file->getSize(),
             'original_name' => $file->getClientOriginalName(),
         ];
     }
 
-    /**
-     * Suppression des images d'un produit
-     */
-    public function deleteProductImages(array $imagePaths): void
+    /** Backward-compat upload method returning the stored path only. */
+    public function uploadAnalysisImage(UploadedFile $file, $productId = null): string
     {
-        foreach ($imagePaths as $imagePath) {
-            // Suppression image originale
-            Storage::disk('product_images')->delete($imagePath);
-            
-            // Suppression des variantes
-            foreach (array_keys(self::IMAGE_SIZES) as $size) {
-                $variantPath = $this->getVariantPath($imagePath, $size);
-                Storage::disk('product_images')->delete($variantPath);
+        $result = $this->storeAnalysisFile($file, $productId);
+        return $result['path'];
+    }
+
+    /** Delete a single file from public disk (backward compat). */
+    public function deleteFile($path)
+    {
+        if (!$path) return false;
+        if (Storage::disk('public')->exists($path)) {
+            return Storage::disk('public')->delete($path);
+        }
+        // Try product_images and analysis disks as well
+        if (Storage::disk('product_images')->exists($path)) {
+            return Storage::disk('product_images')->delete($path);
+        }
+        if (Storage::disk('analysis')->exists($path)) {
+            return Storage::disk('analysis')->delete($path);
+        }
+        return false;
+    }
+
+    /**
+     * Delete original images and their variants based on naming convention.
+     */
+    public function deleteProductImages(array $originalPaths): void
+    {
+        foreach ($originalPaths as $original) {
+            if (!$original) continue;
+            $this->silentDelete('product_images', $original);
+
+            // Delete common variants if exist
+            $dotPos = strrpos($original, '.');
+            if ($dotPos !== false) {
+                $base = substr($original, 0, $dotPos);
+                $ext = substr($original, $dotPos + 1);
+                $this->silentDelete('product_images', $base . '_thumbnail.' . $ext);
+                $this->silentDelete('product_images', $base . '_medium.' . $ext);
             }
         }
     }
 
     /**
-     * Suppression d'un fichier d'analyse
+     * Optimize image for web
      */
-    public function deleteAnalysisFile(string $filePath): void
+    private function optimizeImage(UploadedFile $file, $maxWidth = 800, $maxHeight = 600)
     {
-        Storage::disk('analysis')->delete($filePath);
+        $image = $this->imageManager->read($file->getRealPath());
+        return $this->optimizeInterventionImage($image, $maxWidth, $maxHeight, strtolower($file->getClientOriginalExtension()));
     }
 
-    /**
-     * Génération d'URL sécurisée pour une image
-     */
-    public function getProductImageUrl(string $imagePath, string $size = 'original'): string
+    private function optimizeInterventionImage($image, int $maxWidth, int $maxHeight, string $extension): string
     {
-        $path = $size === 'original' ? $imagePath : $this->getVariantPath($imagePath, $size);
-        
-        return route('api.files.product-image', [
-            'path' => base64_encode($path)
-        ]);
-    }
-
-    /**
-     * Génération d'URL sécurisée pour un fichier d'analyse
-     */
-    public function getAnalysisFileUrl(string $filePath): string
-    {
-        return route('api.files.analysis', [
-            'path' => base64_encode($filePath)
-        ]);
-    }
-
-    /**
-     * Validation d'une image
-     */
-    private function validateImage(UploadedFile $file): void
-    {
-        $extension = strtolower($file->getClientOriginalExtension());
-        
-        if (!in_array($extension, self::ALLOWED_IMAGE_EXTENSIONS)) {
-            throw new \InvalidArgumentException(
-                'Format d\'image non autorisé. Formats acceptés: ' . implode(', ', self::ALLOWED_IMAGE_EXTENSIONS)
-            );
+        if ($image->width() > $maxWidth || $image->height() > $maxHeight) {
+            $image->scaleDown($maxWidth, $maxHeight);
         }
-        
-        if ($file->getSize() > self::MAX_IMAGE_SIZE) {
-            throw new \InvalidArgumentException(
-                'Image trop volumineuse. Taille maximale: ' . (self::MAX_IMAGE_SIZE / 1024 / 1024) . 'MB'
-            );
-        }
-        
-        if (!$file->isValid()) {
-            throw new \InvalidArgumentException('Fichier image corrompu ou invalide');
-        }
-
-        // Validation que c'est vraiment une image
-        $imageInfo = getimagesize($file->getPathname());
-        if ($imageInfo === false) {
-            throw new \InvalidArgumentException('Le fichier n\'est pas une image valide');
+        switch ($extension) {
+            case 'jpg':
+            case 'jpeg':
+                return $image->toJpeg(85)->toString();
+            case 'png':
+                return $image->toPng()->toString();
+            case 'webp':
+                return $image->toWebp(85)->toString();
+            default:
+                return $image->toJpeg(85)->toString();
         }
     }
 
     /**
-     * Validation d'un fichier d'analyse
+     * Get file URL
      */
-    private function validateAnalysisFile(UploadedFile $file): void
+    public function getFileUrl($path)
     {
-        $extension = strtolower($file->getClientOriginalExtension());
-        
-        if (!in_array($extension, self::ALLOWED_ANALYSIS_EXTENSIONS)) {
-            throw new \InvalidArgumentException(
-                'Format de fichier d\'analyse non autorisé. Formats acceptés: ' . implode(', ', self::ALLOWED_ANALYSIS_EXTENSIONS)
-            );
-        }
-        
-        if ($file->getSize() > self::MAX_ANALYSIS_SIZE) {
-            throw new \InvalidArgumentException(
-                'Fichier d\'analyse trop volumineux. Taille maximale: ' . (self::MAX_ANALYSIS_SIZE / 1024 / 1024) . 'MB'
-            );
-        }
-        
-        if (!$file->isValid()) {
-            throw new \InvalidArgumentException('Fichier d\'analyse corrompu ou invalide');
-        }
+        return Storage::disk('public')->url($path);
     }
 
     /**
-     * Génération d'un nom de fichier unique
+     * Generate a secure-ish URL for product images via API gateway endpoint.
      */
-    private function generateUniqueFilename(UploadedFile $file): string
+    public function getProductImageUrl(string $originalPath, ?string $variant = null): string
     {
-        $extension = $file->getClientOriginalExtension();
-        $timestamp = now()->format('Y-m-d_H-i-s');
-        $uuid = Str::random(8);
-        
-        return $timestamp . '_' . $uuid . '.' . $extension;
+        $base = '/api/files/product-image/';
+        $payload = $originalPath . '|' . ($variant ?? 'original') . '|' . (config('app.key') ?? 'key');
+        $token = substr(hash('sha256', $payload), 0, 40);
+        $suffix = $variant ? ('?variant=' . urlencode($variant) . '&p=' . urlencode($originalPath)) : ('?p=' . urlencode($originalPath));
+        return $base . $token . $suffix;
     }
 
     /**
-     * Génération des variantes d'images
+     * Check if file exists
      */
-    private function generateImageVariants(UploadedFile $file, string $disk, string $originalPath): array
+    public function fileExists($path)
     {
-        $variants = [];
-        
-        foreach (self::IMAGE_SIZES as $sizeName => $dimensions) {
-            try {
-                $variantPath = $this->getVariantPath($originalPath, $sizeName);
-                
-                $manager = new ImageManager(new Driver());
-                $image = $manager->read($file->getPathname())
-                    ->cover($dimensions['width'], $dimensions['height'])
-                    ->toWebp(85); // Conversion en WebP avec compression
-                
-                Storage::disk($disk)->put($variantPath, $image->toString());
-                $variants[$sizeName] = $variantPath;
-                
-            } catch (\Exception $e) {
-                \Log::warning("Erreur génération variante {$sizeName}", [
-                    'error' => $e->getMessage(),
-                    'path' => $originalPath
-                ]);
-            }
-        }
-        
-        return $variants;
+        // Check in specific disks first
+        if (Storage::disk('product_images')->exists($path)) return true;
+        if (Storage::disk('analysis')->exists($path)) return true;
+        return Storage::disk('public')->exists($path);
     }
 
     /**
-     * Génération du chemin d'une variante
-     */
-    private function getVariantPath(string $originalPath, string $size): string
-    {
-        $pathInfo = pathinfo($originalPath);
-        return $pathInfo['dirname'] . '/' . $pathInfo['filename'] . '_' . $size . '.webp';
-    }
-
-    /**
-     * Nettoyage des fichiers orphelins
+     * Remove product images that are no longer referenced by any ProductCBD.
+     * Returns number of deleted files.
      */
     public function cleanupOrphanedFiles(): int
     {
-        $cleanedCount = 0;
-        
-        // Nettoyage des images produits orphelines
-        $productImages = Storage::disk('product_images')->allFiles();
-        $existingProducts = \App\Models\ProductCBD::pluck('id')->toArray();
-        
-        foreach ($productImages as $imagePath) {
-            $productId = $this->extractProductIdFromPath($imagePath);
-            if ($productId && !in_array($productId, $existingProducts)) {
-                Storage::disk('product_images')->delete($imagePath);
-                $cleanedCount++;
+        $referenced = collect(\App\Models\ProductCBD::query()->pluck('images')->all())
+            ->filter()
+            ->flatMap(function ($arr) { return (array) $arr; })
+            ->values()
+            ->all();
+        $referencedSet = array_flip($referenced);
+
+        $allFiles = Storage::disk('product_images')->allFiles();
+        $deleted = 0;
+        foreach ($allFiles as $file) {
+            if (!isset($referencedSet[$file])) {
+                if (Storage::disk('product_images')->delete($file)) {
+                    $deleted++;
+                }
             }
         }
-        
-        // Nettoyage des fichiers d'analyse orphelins
-        $analysisFiles = Storage::disk('analysis')->allFiles();
-        
-        foreach ($analysisFiles as $filePath) {
-            $productId = $this->extractProductIdFromPath($filePath);
-            if ($productId && !in_array($productId, $existingProducts)) {
-                Storage::disk('analysis')->delete($filePath);
-                $cleanedCount++;
-            }
-        }
-        
-        return $cleanedCount;
+        return $deleted;
     }
 
-    /**
-     * Extraction de l'ID produit depuis un chemin de fichier
-     */
-    private function extractProductIdFromPath(string $path): ?int
+    private function silentDelete(string $disk, string $path): void
     {
-        if (preg_match('/products\/(\d+)\//', $path, $matches)) {
-            return (int) $matches[1];
+        try {
+            if (Storage::disk($disk)->exists($path)) {
+                Storage::disk($disk)->delete($path);
+            }
+        } catch (\Throwable $e) {
+            // no-op
         }
-        return null;
     }
 }

@@ -63,9 +63,10 @@ class OrderMutator
         }
 
         try {
-            $this->service->cancelOrder($args['id']);
-            // Retourne directement true tel qu'attendu par le schema GraphQL
+            $this->service->cancelOrder($args['id'], $user->id);
             return true;
+        } catch (CustomException $e) {
+            throw $e;
         } catch (\Exception $e) {
             throw new CustomException('Erreur interne', 'Impossible d\'annuler la commande.');
         }
@@ -89,24 +90,12 @@ class OrderMutator
         }
 
         $input = $args['input'];
-        $order = Order::find($input['id']);
-        
-        if (!$order) {
-            throw new CustomException('Commande introuvable', 'Aucune commande trouvée avec cet ID.');
-        }
-
-        // Validation du statut
-        $validStatuses = ['pending', 'validated', 'cancelled'];
-        if (!in_array($input['status'], $validStatuses)) {
-            throw new CustomException('Statut invalide', 'Le statut doit être : pending, validated ou cancelled.');
-        }
 
         try {
-            $order->status = $input['status'];
-            $order->save();
-
-            // Retourne la commande avec ses relations
-            return $order->load('products', 'user');
+            $order = $this->service->updateOrderStatus($input['id'], $input['status']);
+            return $order->load(['user', 'products']);
+        } catch (CustomException $e) {
+            throw $e;
         } catch (\Exception $e) {
             throw new CustomException('Erreur interne', 'Impossible de mettre à jour le statut de la commande.');
         }

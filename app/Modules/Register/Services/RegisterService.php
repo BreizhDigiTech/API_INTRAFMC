@@ -6,6 +6,8 @@ use App\Models\User;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 use Tymon\JWTAuth\Facades\JWTAuth;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class RegisterService
 {
@@ -86,5 +88,57 @@ class RegisterService
         $user->is_admin = User::USER;
         $user->is_active = User::ACTIVE;
         $user->save();
+    }
+
+    /**
+     * Vérifie l'email d'un utilisateur avec un token.
+     *
+     * @param string $token
+     * @return bool
+     */
+    public function verifyEmail(string $token): bool
+    {
+        // Dans une vraie application, vous stockeriez le token dans une table séparée
+        // Pour cet exemple, nous utilisons un hash simple du token
+        $user = User::where('remember_token', $token)
+            ->whereNull('email_verified_at')
+            ->first();
+
+        if (!$user) {
+            return false;
+        }
+
+        $user->update([
+            'email_verified_at' => now(),
+            'remember_token' => null
+        ]);
+
+        return true;
+    }
+
+    /**
+     * Renvoie l'email de vérification.
+     *
+     * @param string $email
+     * @return bool
+     */
+    public function resendVerificationEmail(string $email): bool
+    {
+        $user = User::where('email', $email)
+            ->whereNull('email_verified_at')
+            ->first();
+
+        if (!$user) {
+            return false;
+        }
+
+        // Générer un nouveau token de vérification
+        $verificationToken = Str::random(64);
+        $user->update(['remember_token' => $verificationToken]);
+
+        // Dans une vraie application, vous enverriez l'email ici
+        // Mail::to($user->email)->send(new VerifyEmailMail($verificationToken));
+
+        return true;
     }
 }

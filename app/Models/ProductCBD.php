@@ -1,159 +1,131 @@
 <?php
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Storage;
-use App\Services\FileManagerService;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class ProductCBD extends Model
 {
     use HasFactory;
-    
-    protected $table = 'cbd_products'; // Nom de la table en base de données
+
+    protected $table = 'cbd_products';
 
     protected $fillable = [
         'name',
         'description',
         'price',
-        'images', // Array de chemins d'images
+        'images',
+        'image_metadata',
         'stock',
-        'analysis_file', // Chemin du fichier d'analyse
-        'category_id', // Référence à la catégorie
+        'analysis_file',
+        'analysis_file_original_name',
+        'analysis_file_size',
+        'analysis_file_mime_type',
+        'category_id'
     ];
 
     protected $casts = [
-        'images' => 'array', // Cast JSON en tableau PHP
-        'price' => 'decimal:2',
+        'price' => 'float',
+        'stock' => 'integer',
+        'images' => 'array',
+        'image_metadata' => 'array',
+        'analysis_file_size' => 'integer',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
 
-    protected $appends = [
-        'images_urls',
-        'analysis_file_url'
-    ];
-
-    protected static function boot()
+    public function category(): BelongsTo
     {
-        parent::boot();
-        
-        // Supprime automatiquement les fichiers lors de la suppression du produit
-        static::deleting(function ($product) {
-            $fileManager = app(FileManagerService::class);
-            
-            // Suppression des images
-            if ($product->images && is_array($product->images)) {
-                $fileManager->deleteProductImages($product->images);
-            }
-            
-            // Suppression du fichier d'analyse
-            if ($product->analysis_file) {
-                $fileManager->deleteAnalysisFile($product->analysis_file);
-            }
-        });
+        return $this->belongsTo(Category::class);
     }
 
-    public function category()
-    {
-        return $this->belongsTo(Category::class, 'category_id');
-    }
-
-    public function categories()
+    public function categories(): BelongsToMany
     {
         return $this->belongsToMany(Category::class, 'category_product', 'product_id', 'category_id');
     }
 
-    public function suppliers()
+    // Accesseurs pour les URLs complètes
+    public function getImageUrlsAttribute(): array
     {
-        return $this->belongsToMany(Supplier::class, 'product_supplier', 'product_id', 'supplier_id');
-    }
-
-    public function getCartQuantity()
-    {
-        return $this->pivot ? $this->pivot->quantity : null;
-    }
-
-    /**
-     * URLs des images avec toutes les variantes
-     */
-    public function getImagesUrlsAttribute(): array
-    {
-        if (!$this->images || !is_array($this->images)) {
+        if (empty($this->images)) {
             return [];
         }
-        
-        $fileManager = app(FileManagerService::class);
-        $imageUrls = [];
-        
-        foreach ($this->images as $imagePath) {
-            $imageUrls[] = [
-                'original' => $fileManager->getProductImageUrl($imagePath),
-                'thumbnail' => $fileManager->getProductImageUrl($imagePath, 'thumbnail'),
-                'medium' => $fileManager->getProductImageUrl($imagePath, 'medium'),
-                'large' => $fileManager->getProductImageUrl($imagePath, 'large'),
-                'path' => $imagePath
-            ];
-        }
-        
-        return $imageUrls;
+
+        return array_map(function ($path) {
+            return asset('storage/' . $path);
+        }, $this->images);
     }
 
-    /**
-     * URL du fichier d'analyse
-     */
+    // Backward-compat accessor alias used in some tests
+    public function getImagesUrlsAttribute(): array
+    {
+        return $this->image_urls;
+    }
+
     public function getAnalysisFileUrlAttribute(): ?string
     {
-        if (!$this->analysis_file) {
+        if (empty($this->analysis_file)) {
             return null;
         }
-        
-        $fileManager = app(FileManagerService::class);
-        return $fileManager->getAnalysisFileUrl($this->analysis_file);
+
+        return asset('storage/' . $this->analysis_file);
     }
 
-    /**
-     * Ajouter une image au produit
-     */
-    public function addImage(string $imagePath): void
+    // Helpers expected by tests
+    public function addImage(string $path): void
     {
-        $images = $this->images ?? [];
-        $images[] = $imagePath;
-        $this->images = $images;
+    $images = $this->images ?? [];
+        $images[] = $path;
+        $this->images = array_values(array_unique($images));
         $this->save();
     }
 
-    /**
-     * Supprimer une image du produit
-     */
-    public function removeImage(string $imagePath): void
+    public function removeImage(string $path): void
     {
-        if (!$this->images) {
-            return;
+        // Delete file (+ variants) from storage
+        try {
+            app(\App\Services\FileManagerService::class)->deleteProductImages([$path]);
+        } catch (\Throwable $e) {
+            // ignore
         }
-        
-        $images = array_filter($this->images, function($path) use ($imagePath) {
-            return $path !== $imagePath;
+
+        // Update model state
+        $images = collect($this->images ?? [])->filter(fn($p) => $p !== $path)->values()->all();
+        $this->images = !empty($images) ? $images : null;
+        $this->save();
+    }
+
+    public function setAnalysisFile(string $path): void
+    {
+        $this->analysis_file = $path;
+        $this->save();
+    }
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::deleting(function (ProductCBD $product) {
+            // Detach relations
+            try { $product->categories()->detach(); } catch (\Throwable $e) {}
+
+            // Delete associated files (images + variants) and analysis file
+            try {
+                $images = $product->images ?? [];
+                if (!empty($images)) {
+                    $fm = app(\App\Services\FileManagerService::class);
+                    $fm->deleteProductImages($images);
+                }
+            } catch (\Throwable $e) {}
+
+            try {
+                if (!empty($product->analysis_file)) {
+                    app(\App\Services\FileManagerService::class)->deleteFile($product->analysis_file);
+                }
+            } catch (\Throwable $e) {}
         });
-        
-        $this->images = array_values($images);
-        $this->save();
-        
-        // Suppression physique du fichier
-        $fileManager = app(FileManagerService::class);
-        $fileManager->deleteProductImages([$imagePath]);
-    }
-
-    /**
-     * Définir le fichier d'analyse
-     */
-    public function setAnalysisFile(string $filePath): void
-    {
-        // Suppression de l'ancien fichier
-        if ($this->analysis_file) {
-            $fileManager = app(FileManagerService::class);
-            $fileManager->deleteAnalysisFile($this->analysis_file);
-        }
-        
-        $this->analysis_file = $filePath;
-        $this->save();
     }
 }

@@ -15,10 +15,17 @@ type User {
   id: ID!               # Identifiant utilisateur
   name: String!         # Nom
   email: String!        # Email
+  phone: String         # Téléphone
+  address: String       # Adresse
+  birth_date: Date      # Date de naissance
   avatar: String        # URL de l'avatar
+  avatar_original_name: String # Nom original du fichier avatar
+  avatar_size: Int      # Taille du fichier avatar
   is_admin: Boolean     # Vrai si admin
   is_active: Boolean    # Vrai si compte actif
   email_verified_at: String # Date de vérification de l'email
+  created_at: DateTime  # Date de création
+  updated_at: DateTime  # Date de mise à jour
 }
 
 extend type Mutation {

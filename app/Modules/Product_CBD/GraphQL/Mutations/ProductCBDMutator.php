@@ -3,23 +3,38 @@
 namespace App\Modules\Product_CBD\GraphQL\Mutations;
 
 use App\Exceptions\CustomException;
-use Illuminate\Support\Facades\Gate;
 use App\Models\ProductCBD;
+use App\Services\FileManagerService;
 use App\Helpers\AuthHelper;
-use Illuminate\Validation\Rule;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Gate;
+use GraphQL\Type\Definition\ResolveInfo;
+use Nuwave\Lighthouse\Support\Contracts\GraphQLContext;
 
 class ProductCBDMutator
 {
+    protected ?FileManagerService $fileManager = null;
+
+    public function __construct(?FileManagerService $fileManager = null)
+    {
+        $this->fileManager = $fileManager;
+    }
+
+    protected function getFileManager(): FileManagerService
+    {
+        if (!$this->fileManager) {
+            $this->fileManager = app(FileManagerService::class);
+        }
+        return $this->fileManager;
+    }
+
     /**
-     * Crée un nouveau produit CBD.
-     *
-     * @param mixed $root
-     * @param array $args
-     * @return ProductCBD
-     * @throws CustomException
+     * Crée un nouveau produit CBD avec upload de fichiers.
      */
-    public function createProduct($root, array $args)
+    public function create($root, array $args, GraphQLContext $context, ResolveInfo $resolveInfo)
     {
         $user = AuthHelper::ensureAuthenticated();
 
@@ -27,100 +42,145 @@ class ProductCBDMutator
             throw new CustomException('Acces refuse', 'Vous n\'avez pas les permissions necessaires pour creer un produit.');
         }
 
-        try {
+        return DB::transaction(function () use ($args) {
             $input = $args['input'];
             
-            // Validate input
-            $validator = validator($input, [
-                'name' => ['required', 'string', 'max:255', Rule::unique('cbd_products', 'name')],
-                'description' => ['nullable', 'string'],
-                'price' => ['required', 'numeric', 'min:0'],
-                'stock' => ['required', 'integer', 'min:0'],
-                'category_id' => ['nullable', 'exists:categories,id'],
-                'analysis_file' => ['nullable', 'string'],
-                'images' => ['nullable', 'array']
-            ]);
-
-            if ($validator->fails()) {
-                throw \Illuminate\Validation\ValidationException::withMessages($validator->errors()->toArray());
+            // Extraire les fichiers et relations avant la création
+            $images = $input['images'] ?? [];
+            $analysisImage = $input['analysis_image'] ?? ($input['analysis_file'] ?? null);
+            $categoryIds = $input['category_ids'] ?? [];
+            
+            // Supprimer les champs non-model pour la création
+            unset($input['images'], $input['analysis_image'], $input['analysis_file'], $input['category_ids']);
+            
+            // Créer le produit
+            $product = ProductCBD::create($input);
+            
+            // Attacher les catégories
+            if (!empty($categoryIds)) {
+                $product->categories()->attach($categoryIds);
             }
-
-            // Create product directly
-            $product = ProductCBD::create([
-                'name' => $input['name'],
-                'description' => $input['description'] ?? null,
-                'price' => $input['price'],
-                'stock' => $input['stock'],
-                'category_id' => $input['category_id'] ?? null,
-                'analysis_file' => $input['analysis_file'] ?? null,
-                'images' => $input['images'] ?? []
-            ]);
-
-            return $product;
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            throw $e;
-        } catch (\Exception $e) {
-            throw new CustomException('Erreur interne', 'Impossible de creer le produit.');
-        }
+            
+            // Gérer les images
+            $uploadedImages = [];
+            if (!empty($images)) {
+                foreach ($images as $image) {
+                    try {
+                        $path = $this->getFileManager()->uploadProductImage($image, $product->id);
+                        $uploadedImages[] = $path;
+                    } catch (\Exception $e) {
+                        Log::error('Erreur upload image produit: ' . $e->getMessage());
+                    }
+                }
+                $product->images = $uploadedImages;
+            }
+            
+            // Gérer l'image d'analyse
+            if ($analysisImage) {
+                try {
+                    $analysisPath = $this->getFileManager()->uploadAnalysisImage($analysisImage, $product->id);
+                    // Stocker au champ canonical analysis_file
+                    $product->analysis_file = $analysisPath;
+                    if ($analysisImage instanceof UploadedFile) {
+                        $product->analysis_file_original_name = $analysisImage->getClientOriginalName();
+                        $product->analysis_file_size = $analysisImage->getSize();
+                        $product->analysis_file_mime_type = $analysisImage->getMimeType();
+                    }
+                } catch (\Exception $e) {
+                    Log::error('Erreur upload image analyse: ' . $e->getMessage());
+                }
+            }
+            
+            $product->save();
+            $product->load('categories');
+            
+            Log::info('createProduct returning', $product->toArray());
+            return $product->fresh(['categories']);
+        });
     }
 
     /**
-     * Met à jour un produit CBD existant.
-     *
-     * @param mixed $root
-     * @param array $args
-     * @return ProductCBD
-     * @throws CustomException
+     * Met à jour un produit CBD.
      */
-    public function updateProduct($root, array $args)
+    public function update($root, array $args, GraphQLContext $context, ResolveInfo $resolveInfo)
     {
         $user = AuthHelper::ensureAuthenticated();
-        $product = ProductCBD::findOrFail($args['id']);
 
-        if (!Gate::allows('update', $product)) {
-            throw new CustomException('Acces refuse', 'Vous n\'avez pas les permissions necessaires pour modifier ce produit.');
-        }
-
-        try {
+        return DB::transaction(function () use ($args) {
+            $product = ProductCBD::findOrFail($args['id']);
             $input = $args['input'];
             
-            // Validate input for update
-            $validator = validator($input, [
-                'name' => ['sometimes', 'string', 'max:255', Rule::unique('cbd_products', 'name')->ignore($args['id'])],
-                'description' => ['nullable', 'string'],
-                'price' => ['sometimes', 'numeric', 'min:0'],
-                'stock' => ['sometimes', 'integer', 'min:0'],
-                'category_id' => ['nullable', 'exists:categories,id'],
-                'analysis_file' => ['nullable', 'string'],
-                'images' => ['nullable', 'array']
-            ]);
-
-            if ($validator->fails()) {
-                throw \Illuminate\Validation\ValidationException::withMessages($validator->errors()->toArray());
+            // Extraire les fichiers et relations
+            $images = $input['images'] ?? null;
+            $analysisImage = $input['analysis_image'] ?? ($input['analysis_file'] ?? null);
+            $categoryIds = $input['category_ids'] ?? null;
+            
+            // Supprimer les champs non-model
+            unset($input['images'], $input['analysis_image'], $input['analysis_file'], $input['category_ids']);
+            
+            // Mettre à jour les champs du produit
+            $product->fill($input);
+            
+            // Mettre à jour les catégories
+            if ($categoryIds !== null) {
+                $product->categories()->sync($categoryIds);
             }
-
-            // Update product directly
-            $product->update(array_filter($input, function($value) {
-                return $value !== null;
-            }));
-
-            return $product->fresh();
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            throw $e;
-        } catch (\Exception $e) {
-            throw new CustomException('Erreur interne', 'Impossible de modifier le produit.');
-        }
+            
+            // Gérer les nouvelles images
+            if ($images !== null) {
+                // Supprimer les anciennes images
+                if (!empty($product->images)) {
+                    foreach ($product->images as $oldImage) {
+                        $this->getFileManager()->deleteFile($oldImage);
+                    }
+                }
+                
+                // Uploader les nouvelles images
+                $uploadedImages = [];
+                foreach ($images as $image) {
+                    try {
+                        $path = $this->getFileManager()->uploadProductImage($image, $product->id);
+                        $uploadedImages[] = $path;
+                    } catch (\Exception $e) {
+                        Log::error('Erreur upload image produit: ' . $e->getMessage());
+                    }
+                }
+                $product->images = $uploadedImages;
+            }
+            
+            // Gérer la nouvelle image d'analyse
+            if ($analysisImage !== null) {
+                // Supprimer l'ancienne image d'analyse
+                if ($product->analysis_file) {
+                    $this->getFileManager()->deleteFile($product->analysis_file);
+                }
+                
+                try {
+                    $analysisPath = $this->getFileManager()->uploadAnalysisImage($analysisImage, $product->id);
+                    $product->analysis_file = $analysisPath;
+                    if ($analysisImage instanceof UploadedFile) {
+                        $product->analysis_file_original_name = $analysisImage->getClientOriginalName();
+                        $product->analysis_file_size = $analysisImage->getSize();
+                        $product->analysis_file_mime_type = $analysisImage->getMimeType();
+                    }
+                } catch (\Exception $e) {
+                    Log::error('Erreur upload image analyse: ' . $e->getMessage());
+                    $product->analysis_file = null;
+                }
+            }
+            
+            $product->save();
+            $product->load('categories');
+            
+            Log::info('updateProduct returning', $product->toArray());
+            return $product->fresh(['categories']);
+        });
     }
 
     /**
      * Supprime un produit CBD.
-     *
-     * @param mixed $root
-     * @param array $args
-     * @return array
-     * @throws CustomException
      */
-    public function deleteProduct($root, array $args)
+    public function delete($root, array $args)
     {
         $user = AuthHelper::ensureAuthenticated();
         $product = ProductCBD::findOrFail($args['id']);
@@ -130,19 +190,77 @@ class ProductCBDMutator
         }
 
         try {
-            // Delete analysis file if exists
-            if ($product->analysis_file && Storage::exists($product->analysis_file)) {
-                Storage::delete($product->analysis_file);
-            }
-
-            $product->delete();
-
-            return [
-                'success' => true,
-                'message' => 'Produit supprime avec succes.'
-            ];
+            return DB::transaction(function () use ($product) {
+                // Supprimer les fichiers associés
+                if (!empty($product->images)) {
+                    foreach ($product->images as $image) {
+                        $this->getFileManager()->deleteFile($image);
+                    }
+                }
+                
+                if ($product->analysis_file) {
+                    $this->getFileManager()->deleteFile($product->analysis_file);
+                }
+                
+                // Détacher les catégories
+                $product->categories()->detach();
+                
+                // Supprimer le produit
+                $product->delete();
+                
+                return [
+                    'success' => true,
+                    'message' => 'Produit supprime avec succes.'
+                ];
+            });
         } catch (\Exception $e) {
             throw new CustomException('Erreur interne', 'Impossible de supprimer le produit.');
         }
+    }
+
+    /**
+     * Upload d'images pour un produit existant.
+     */
+    public function uploadImages($root, array $args, GraphQLContext $context, ResolveInfo $resolveInfo)
+    {
+        $user = AuthHelper::ensureAuthenticated();
+        $productId = $args['productId'];
+        $images = $args['images'];
+        
+        $product = ProductCBD::findOrFail($productId);
+        
+        if (!Gate::allows('update', $product)) {
+            throw new CustomException('Acces refuse', 'Vous n\'avez pas les permissions necessaires pour modifier ce produit.');
+        }
+        
+        $results = [];
+        
+        foreach ($images as $image) {
+            try {
+                $path = $this->getFileManager()->uploadProductImage($image, $productId);
+                
+                // Ajouter l'image au produit
+                $currentImages = $product->images ?? [];
+                $currentImages[] = $path;
+                $product->images = $currentImages;
+                $product->save();
+                
+                $results[] = [
+                    'success' => true,
+                    'message' => 'Image uploadee avec succes',
+                    'url' => Storage::url($path),
+                    'path' => $path
+                ];
+            } catch (\Exception $e) {
+                $results[] = [
+                    'success' => false,
+                    'message' => 'Erreur lors de l\'upload: ' . $e->getMessage(),
+                    'url' => null,
+                    'path' => null
+                ];
+            }
+        }
+        
+        return $results;
     }
 }

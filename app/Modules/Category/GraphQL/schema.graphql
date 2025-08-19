@@ -16,10 +16,7 @@ input UpdateCategoryInput {
   description: String
 }
 
-extend type ProductCBD {
-  category: Category
-  categories: [Category!]!
-}
+
 
 extend type Query {
   categories: [Category!]! 

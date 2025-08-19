@@ -213,9 +213,12 @@ return [
         'types' => 'App\\GraphQL\\Types',
         'interfaces' => 'App\\GraphQL\\Interfaces',
         'unions' => 'App\\GraphQL\\Unions',
+        // Where Lighthouse should look for custom scalar classes.
+        // Provide one or more namespaces as strings.
         'scalars' => [
-        'DateTime' => \Nuwave\Lighthouse\Schema\Types\Scalars\DateTime::class,
-        'Date' => \Nuwave\Lighthouse\Schema\Types\Scalars\Date::class,
+            'Nuwave\\Lighthouse\\Schema\\Types\\Scalars',
+            'MLL\\GraphQLScalars',
+            'App\\GraphQL\\Scalars',
         ],
         'directives' => 'App\\GraphQL\\Directives',
         'validators' => 'App\\GraphQL\\Validators',

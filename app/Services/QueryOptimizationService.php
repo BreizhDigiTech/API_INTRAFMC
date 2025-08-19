@@ -113,7 +113,7 @@ class QueryOptimizationService
             ->select([
                 'orders.id',
                 'orders.user_id',
-                'orders.total_amount',
+                'orders.total',
                 'orders.status',
                 'orders.created_at',
                 'users.name as user_name',

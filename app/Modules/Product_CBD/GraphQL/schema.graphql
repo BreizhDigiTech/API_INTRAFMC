@@ -1,61 +1,126 @@
 extend type Query {
-  products: [ProductCBD!]!
-    @guard(with: ["api"])
-    @paginate(
-      defaultCount: 20,
-      maxCount: 100,
-      builder: "App\\Modules\\Product_CBD\\GraphQL\\Queries\\ProductCBDQuery@products"
-    )
+  productsCBD(
+    first: Int = 20
+    page: Int
+    name: String @where(operator: "like")
+    category_id: ID @eq
+  ): [ProductCBD!]! @paginate(defaultCount: 20)
   
-  product(id: ID!): ProductCBD 
-    @guard(with: ["api"]) 
-    @field(resolver: "App\\Modules\\Product_CBD\\GraphQL\\Queries\\ProductCBDQuery@product")
+  productCBD(id: ID! @eq): ProductCBD @find
+
+  # Aliases legacy pour compatibilité tests existants
+  products(
+    first: Int = 20
+    page: Int
+  ): [ProductCBD!]! @paginate(defaultCount: 20)
+
+  product(id: ID! @eq): ProductCBD @find
 }
 
 extend type Mutation {
-  createProduct(input: CreateProductInput!): ProductCBD 
-  @guard(with: ["api"]) 
-  @field(resolver: "App\\Modules\\Product_CBD\\GraphQL\\Mutations\\ProductCBDMutator@createProduct")
-
-  updateProduct(id: ID!, input: UpdateProductInput!): ProductCBD 
-  @guard(with: ["api"])
-  @field(resolver: "App\\Modules\\Product_CBD\\GraphQL\\Mutations\\ProductCBDMutator@updateProduct")
-
-  deleteProduct(id: ID!): DeleteResponse
+  createProductCBD(input: CreateProductCBDInput!): ProductCBD! 
     @guard(with: ["api"])
-    @field(resolver: "App\\Modules\\Product_CBD\\GraphQL\\Mutations\\ProductCBDMutator@deleteProduct")
+    @field(resolver: "App\\Modules\\Product_CBD\\GraphQL\\Mutations\\ProductCBDMutator@create")
+  
+  updateProductCBD(id: ID!, input: UpdateProductCBDInput!): ProductCBD! 
+    @guard(with: ["api"])
+    @can(ability: "update", model: "App\\Models\\ProductCBD", find: "id")
+    @field(resolver: "App\\Modules\\Product_CBD\\GraphQL\\Mutations\\ProductCBDMutator@update")
+  
+  deleteProductCBD(id: ID!): DeleteResponse! 
+    @guard(with: ["api"])
+    @can(ability: "delete", model: "App\\Models\\ProductCBD", find: "id")
+    @field(resolver: "App\\Modules\\Product_CBD\\GraphQL\\Mutations\\ProductCBDMutator@delete")
+  
+  uploadProductImages(
+    productId: ID!
+    images: [Upload!]!
+  ): [FileUploadResponse!]! 
+    @guard(with: ["api"])
+    @field(resolver: "App\\Modules\\Product_CBD\\GraphQL\\Mutations\\ProductCBDMutator@uploadImages")
+
+  # Aliases legacy pour compat: chemin simple via directives intégrées
+  createProduct(input: CreateProductInput! @spread): ProductCBD!
+    @guard(with: ["api"])
+    @create(model: "App\\Models\\ProductCBD")
+
+  updateProduct(id: ID!, input: UpdateProductInput! @spread): ProductCBD!
+    @guard(with: ["api"])
+    @can(ability: "update", model: "App\\Models\\ProductCBD", find: "id")
+    @update(model: "App\\Models\\ProductCBD")
+
+  deleteProduct(id: ID!): DeleteResponse!
+    @guard(with: ["api"])
+    @can(ability: "delete", model: "App\\Models\\ProductCBD", find: "id")
+    @field(resolver: "App\\Modules\\Product_CBD\\GraphQL\\Mutations\\ProductCBDMutator@delete")
 }
 
-type ProductCBD {
-  id: ID!
-  name: String!
-  description: String
-  price: Float!
-  images: [String]
-  stock: Int!
-  analysis_file: String # Fichier d'analyse (optionnel)
-  analysis_file_url: String # URL du fichier d'analyse
-  category_id: Int
-  created_at: String
-  updated_at: String
-}
-
+# Alias legacy d'inputs pour compatibilité avec anciens tests
 input CreateProductInput {
-  name: String!
-  description: String
-  price: Float!
-  images: [String]
-  stock: Int!
-  analysis_file: String
-  category_id: Int
+  name: String! @rules(apply: ["required", "string", "max:255", "unique:cbd_products,name"])
+  description: String @rules(apply: ["string"])
+  price: Float! @rules(apply: ["required", "numeric", "min:0"])
+  stock: Int! @rules(apply: ["required", "integer", "min:0"])
+  category_id: ID @rules(apply: ["exists:categories,id"])
+  category_ids: [ID!]
+  images: [Upload]
+  analysis_image: Upload
 }
 
 input UpdateProductInput {
-  name: String
-  description: String
-  price: Float
-  images: [String]
-  stock: Int
-  analysis_file: String
-  category_id: Int
+  name: String @rules(apply: ["string", "max:255"])
+  description: String @rules(apply: ["string"])
+  price: Float @rules(apply: ["numeric", "min:0"])
+  stock: Int @rules(apply: ["integer", "min:0"])
+  category_id: ID @rules(apply: ["exists:categories,id"])
+  category_ids: [ID!]
+  images: [Upload]
+  analysis_image: Upload
+}
+
+type ProductCBD {
+    id: ID!
+    name: String!
+    description: String
+    price: Float!
+    images: [String!]
+    image_urls: [String!]
+    image_metadata: JSON
+    stock: Int!
+    analysis_file: String
+    analysis_file_url: String
+    analysis_file_original_name: String
+    analysis_file_size: Int
+    analysis_file_mime_type: String
+    category_id: ID
+    category: Category
+    categories: [Category!]! @belongsToMany
+    created_at: DateTime
+    updated_at: DateTime
+}
+
+input CreateProductCBDInput {
+  name: String! @rules(apply: ["required", "string", "max:255", "unique:cbd_products,name"])
+  description: String @rules(apply: ["string"])
+  price: Float! @rules(apply: ["required", "numeric", "min:0"])
+  stock: Int! @rules(apply: ["required", "integer", "min:0"])
+  category_id: ID @rules(apply: ["exists:categories,id"])
+  category_ids: [ID!]
+  images: [Upload]
+  analysis_file: Upload
+  # Alias legacy pour compat avec certains tests
+  analysis_image: Upload
+}
+
+input UpdateProductCBDInput {
+  name: String @rules(apply: ["string", "max:255"])
+  description: String @rules(apply: ["string"])
+  price: Float @rules(apply: ["numeric", "min:0"])
+  stock: Int @rules(apply: ["integer", "min:0"])
+  category_id: ID @rules(apply: ["exists:categories,id"])
+  category_ids: [ID!]
+  images: [Upload]
+  analysis_file: Upload
+  # Alias legacy pour compat
+  analysis_image: Upload
 }

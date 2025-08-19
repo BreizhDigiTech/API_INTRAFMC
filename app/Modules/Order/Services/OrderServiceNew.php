@@ -182,7 +182,7 @@ class OrderService
     {
         return Order::where('user_id', $userId)
             ->with(['products' => function ($query) {
-                $query->select(['cbd_products.id', 'cbd_products.name', 'cbd_products.price', 'cbd_products.images']);
+                $query->select(['id', 'name', 'price', 'images']);
             }])
             ->orderBy('created_at', 'desc')
             ->paginate($perPage);

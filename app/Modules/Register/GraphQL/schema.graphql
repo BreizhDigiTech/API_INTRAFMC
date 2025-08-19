@@ -1,5 +1,10 @@
 # Schéma GraphQL pour l'enregistrement
 
+type SuccessResponse {
+  success: Boolean!
+  message: String!
+}
+
 extend type Mutation {
   # Enregistrement utilisateur
   register(
@@ -9,6 +14,16 @@ extend type Mutation {
     password_confirmation: String!,
     avatar: String
   ): AuthPayload @field(resolver: "App\\Modules\\Register\\GraphQL\\Mutations\\RegisterMutator@register")
+
+  # Vérification d'email
+  verifyEmail(
+    token: String!
+  ): SuccessResponse @field(resolver: "App\\Modules\\Register\\GraphQL\\Mutations\\RegisterMutator@verifyEmail")
+
+  # Renvoyer l'email de vérification
+  resendVerificationEmail(
+    email: String! @rules(apply: ["email"])
+  ): SuccessResponse @field(resolver: "App\\Modules\\Register\\GraphQL\\Mutations\\RegisterMutator@resendVerificationEmail")
 }
 
 
