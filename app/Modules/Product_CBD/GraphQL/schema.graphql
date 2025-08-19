@@ -39,6 +39,29 @@ extend type Mutation {
     @guard(with: ["api"])
     @field(resolver: "App\\Modules\\Product_CBD\\GraphQL\\Mutations\\ProductCBDMutator@uploadImages")
 
+  # Upload du fichier d'analyse (Upload top-level)
+  uploadProductAnalysisFile(
+    product_id: ID!
+    file: Upload!
+  ): ProductCBD!
+    @guard(with: ["api"])
+    @field(resolver: "App\\Modules\\Product_CBD\\GraphQL\\Mutations\\UploadProductAnalysisFile")
+
+  # Création avec fichiers en arguments top-level (compat clients multipart)
+  createProductCBDWithFiles(
+    name: String!
+    description: String
+    price: Float!
+    stock: Int! = 0
+    category_id: ID
+    category_ids: [ID!]
+    images: [Upload!]
+    image_metadata: JSON
+    analysis_file: Upload
+  ): ProductCBD!
+    @guard(with: ["api"])
+    @field(resolver: "App\\Modules\\Product_CBD\\GraphQL\\Mutations\\ProductCBDCreateWithFiles")
+
   # Aliases legacy pour compat: chemin simple via directives intégrées
   createProduct(input: CreateProductInput! @spread): ProductCBD!
     @guard(with: ["api"])

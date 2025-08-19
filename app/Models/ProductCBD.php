@@ -6,6 +6,9 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Str;
 
 class ProductCBD extends Model
 {
@@ -55,7 +58,26 @@ class ProductCBD extends Model
         }
 
         return array_map(function ($path) {
-            return asset('storage/' . $path);
+            if (!$path) return null;
+            $path = str_replace('\\', '/', $path);
+
+            // absolute URLs
+            if (preg_match('#^https?://#i', $path)) {
+                return $path;
+            }
+
+            // Images gérées via disk 'public' (storage/app/public)
+            if (Str::startsWith($path, ['cbd_products/', '/cbd_products/'])) {
+                return Storage::disk('public')->url(ltrim($path, '/'));
+            }
+
+            // Images placées directement sous public/ (ex: public/product_images/...)
+            if (Str::startsWith($path, ['product_images/', '/product_images/'])) {
+                return URL::to('/' . ltrim($path, '/'));
+            }
+
+            // Fallback: considérer comme relatif au webroot
+            return URL::to('/' . ltrim($path, '/'));
         }, $this->images);
     }
 
@@ -70,8 +92,24 @@ class ProductCBD extends Model
         if (empty($this->analysis_file)) {
             return null;
         }
+        $path = str_replace('\\', '/', $this->analysis_file);
 
-        return asset('storage/' . $this->analysis_file);
+        if (preg_match('#^https?://#i', $path)) {
+            return $path;
+        }
+
+        if (Str::startsWith($path, ['cbd_products/', '/cbd_products/'])) {
+            return Storage::disk('public')->url(ltrim($path, '/'));
+        }
+
+        if (Str::startsWith($path, [
+            'product_images/', '/product_images/',
+            'product_analysis/', '/product_analysis/'
+        ])) {
+            return URL::to('/' . ltrim($path, '/'));
+        }
+
+        return URL::to('/' . ltrim($path, '/'));
     }
 
     // Helpers expected by tests
