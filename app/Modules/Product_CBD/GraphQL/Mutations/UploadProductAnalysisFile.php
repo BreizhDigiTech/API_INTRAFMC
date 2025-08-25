@@ -14,9 +14,9 @@ class UploadProductAnalysisFile
         $file = $args['file'] ?? null;
 
         if ($file instanceof UploadedFile) {
-            $dir = "cbd_products/{$product->id}/analysis";
+            $dir = "product_analysis/{$product->id}";
             $name = uniqid('ana_') . '.' . $file->getClientOriginalExtension();
-            Storage::disk('public')->putFileAs($dir, $file, $name);
+            Storage::disk('public_web')->putFileAs($dir, $file, $name);
 
             $product->analysis_file = "$dir/$name";
             $product->analysis_file_original_name = $file->getClientOriginalName();

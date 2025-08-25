@@ -91,7 +91,7 @@ class ProductCBDUploadTest extends TestCase
         
         // Check that the image file exists in storage
         if (!empty($product->images)) {
-            Storage::disk('product_images')->assertExists($product->images[0]);
+            Storage::disk('public_web')->assertExists($product->images[0]);
         }
     }
 

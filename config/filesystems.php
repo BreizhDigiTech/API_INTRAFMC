@@ -82,6 +82,15 @@ return [
             'report' => false,
         ],
 
+        // Ecriture directe sous public/ pour exposer les fichiers sans /storage
+        'public_web' => [
+            'driver' => 'local',
+            'root' => public_path(),
+            'visibility' => 'public',
+            'throw' => false,
+            'report' => false,
+        ],
+
     ],
 
     /*

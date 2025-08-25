@@ -28,12 +28,12 @@ class ProductCBDCreateWithFiles
 
             // Images
             $images = [];
-            foreach (($args['images'] ?? []) as $file) {
+        foreach (($args['images'] ?? []) as $file) {
                 if ($file instanceof UploadedFile) {
-                    $dir = "cbd_products/{$product->id}/images";
-                    $name = uniqid('img_') . '.' . $file->getClientOriginalExtension();
-                    Storage::disk('public')->putFileAs($dir, $file, $name);
-                    $images[] = "$dir/$name";
+            $dir = "product_images/{$product->id}";
+            $name = uniqid('img_') . '.' . $file->getClientOriginalExtension();
+            Storage::disk('public_web')->putFileAs($dir, $file, $name);
+            $images[] = "$dir/$name";
                 }
             }
             if ($images) {
@@ -43,9 +43,9 @@ class ProductCBDCreateWithFiles
             // Fichier d'analyse
             if (!empty($args['analysis_file']) && $args['analysis_file'] instanceof UploadedFile) {
                 $file = $args['analysis_file'];
-                $dir = "cbd_products/{$product->id}/analysis";
+                $dir = "product_analysis/{$product->id}";
                 $name = uniqid('ana_') . '.' . $file->getClientOriginalExtension();
-                Storage::disk('public')->putFileAs($dir, $file, $name);
+                Storage::disk('public_web')->putFileAs($dir, $file, $name);
 
                 $product->analysis_file = "$dir/$name";
                 $product->analysis_file_original_name = $file->getClientOriginalName();

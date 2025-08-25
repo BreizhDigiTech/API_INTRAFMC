@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Illuminate\Support\Str;
 
 class FileController extends Controller
 {
@@ -152,16 +153,23 @@ class FileController extends Controller
                 $request->file('file'),
                 $request->product_id
             );
+            // Copie vers public/ pour exposition directe
+            $webDir = "product_images/{$request->product_id}";
+            $filename = basename($result['original']);
+            $content = Storage::disk('product_images')->get($result['original']);
+            Storage::disk('public_web')->put($webDir . '/' . $filename, $content);
             
             return response()->json([
                 'success' => true,
                 'data' => [
                     'path' => $result['original'],
+                    'db_path' => $webDir . '/' . $filename,
                     'urls' => [
                         'original' => $fileManager->getProductImageUrl($result['original']),
                         'thumbnail' => $fileManager->getProductImageUrl($result['original'], 'thumbnail'),
                         'medium' => $fileManager->getProductImageUrl($result['original'], 'medium'),
                         'large' => $fileManager->getProductImageUrl($result['original'], 'large'),
+                        'public' => url('/' . $webDir . '/' . $filename),
                     ],
                     'size' => $result['size'],
                     'mime_type' => $result['mime_type']
@@ -192,17 +200,24 @@ class FileController extends Controller
         }
         
         try {
-            $fileManager = app(\App\Services\FileManagerService::class);
-            $result = $fileManager->storeAnalysisFile(
+        $fileManager = app(\App\Services\FileManagerService::class);
+        $result = $fileManager->storeAnalysisFile(
                 $request->file('file'),
                 $request->product_id
             );
+        // Copie vers public/ pour exposition directe (si souhaité)
+        $webDir = "product_analysis/{$request->product_id}";
+        $filename = basename($result['path']);
+        $content = Storage::disk('analysis')->get($result['path']);
+        Storage::disk('public_web')->put($webDir . '/' . $filename, $content);
             
             return response()->json([
                 'success' => true,
                 'data' => [
                     'path' => $result['path'],
+            'db_path' => $webDir . '/' . $filename,
                     'url' => $fileManager->getAnalysisFileUrl($result['path']),
+            'public' => url('/' . $webDir . '/' . $filename),
                     'size' => $result['size'],
                     'mime_type' => $result['mime_type'],
                     'original_name' => $result['original_name']

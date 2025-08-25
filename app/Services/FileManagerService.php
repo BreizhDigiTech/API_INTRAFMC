@@ -116,6 +116,12 @@ class FileManagerService
         if (Storage::disk('analysis')->exists($path)) {
             return Storage::disk('analysis')->delete($path);
         }
+        // If path looks like public web path, delete there too
+        if (str_starts_with($path, 'product_images/') || str_starts_with($path, 'product_analysis/')) {
+            if (Storage::disk('public_web')->exists($path)) {
+                return Storage::disk('public_web')->delete($path);
+            }
+        }
         return false;
     }
 

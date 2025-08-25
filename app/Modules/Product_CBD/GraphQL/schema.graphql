@@ -39,6 +39,23 @@ extend type Mutation {
     @guard(with: ["api"])
     @field(resolver: "App\\Modules\\Product_CBD\\GraphQL\\Mutations\\ProductCBDMutator@uploadImages")
 
+  # Supprimer des images spécifiques d'un produit
+  removeProductImages(
+    product_id: ID!
+    image_paths: [String!]!
+  ): ProductCBD!
+    @guard(with: ["api"])
+    @can(ability: "update", model: "App\\Models\\ProductCBD", find: "product_id")
+    @field(resolver: "App\\Modules\\Product_CBD\\GraphQL\\Mutations\\RemoveProductImages")
+
+  # Supprimer toutes les images d'un produit
+  clearProductImages(
+    product_id: ID!
+  ): ProductCBD!
+    @guard(with: ["api"])
+    @can(ability: "update", model: "App\\Models\\ProductCBD", find: "product_id")
+    @field(resolver: "App\\Modules\\Product_CBD\\GraphQL\\Mutations\\ClearProductImages")
+
   # Upload du fichier d'analyse (Upload top-level)
   uploadProductAnalysisFile(
     product_id: ID!

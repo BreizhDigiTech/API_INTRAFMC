@@ -10,6 +10,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Gate;
 use GraphQL\Type\Definition\ResolveInfo;
 use Nuwave\Lighthouse\Support\Contracts\GraphQLContext;
@@ -49,6 +50,7 @@ class ProductCBDMutator
             $images = $input['images'] ?? [];
             $analysisImage = $input['analysis_image'] ?? ($input['analysis_file'] ?? null);
             $categoryIds = $input['category_ids'] ?? [];
+            $categoryId = $input['category_id'] ?? null;
             
             // Supprimer les champs non-model pour la création
             unset($input['images'], $input['analysis_image'], $input['analysis_file'], $input['category_ids']);
@@ -56,18 +58,24 @@ class ProductCBDMutator
             // Créer le produit
             $product = ProductCBD::create($input);
             
-            // Attacher les catégories
+            // Attacher les catégories (priorité à category_ids puis category_id)
             if (!empty($categoryIds)) {
                 $product->categories()->attach($categoryIds);
+            } elseif ($categoryId) {
+                $product->categories()->attach([$categoryId]);
             }
             
-            // Gérer les images
+            // Gérer les images (enregistrées sous public/product_images/{id}/...)
             $uploadedImages = [];
             if (!empty($images)) {
                 foreach ($images as $image) {
                     try {
-                        $path = $this->getFileManager()->uploadProductImage($image, $product->id);
-                        $uploadedImages[] = $path;
+                        if ($image instanceof UploadedFile) {
+                            $dir = "product_images/{$product->id}";
+                            $name = (string) Str::uuid() . '.' . strtolower($image->getClientOriginalExtension());
+                            Storage::disk('public_web')->putFileAs($dir, $image, $name);
+                            $uploadedImages[] = "$dir/$name";
+                        }
                     } catch (\Exception $e) {
                         Log::error('Erreur upload image produit: ' . $e->getMessage());
                     }
@@ -78,10 +86,14 @@ class ProductCBDMutator
             // Gérer l'image d'analyse
             if ($analysisImage) {
                 try {
-                    $analysisPath = $this->getFileManager()->uploadAnalysisImage($analysisImage, $product->id);
-                    // Stocker au champ canonical analysis_file
-                    $product->analysis_file = $analysisPath;
                     if ($analysisImage instanceof UploadedFile) {
+                        $dir = "product_analysis/{$product->id}";
+                        $name = (string) Str::uuid() . '.' . strtolower($analysisImage->getClientOriginalExtension());
+                        Storage::disk('public_web')->putFileAs($dir, $analysisImage, $name);
+                        $analysisPath = "$dir/$name";
+                        
+                        // Stocker au champ canonical analysis_file
+                        $product->analysis_file = $analysisPath;
                         $product->analysis_file_original_name = $analysisImage->getClientOriginalName();
                         $product->analysis_file_size = $analysisImage->getSize();
                         $product->analysis_file_mime_type = $analysisImage->getMimeType();
@@ -114,6 +126,7 @@ class ProductCBDMutator
             $images = $input['images'] ?? null;
             $analysisImage = $input['analysis_image'] ?? ($input['analysis_file'] ?? null);
             $categoryIds = $input['category_ids'] ?? null;
+            $categoryId = $input['category_id'] ?? null;
             
             // Supprimer les champs non-model
             unset($input['images'], $input['analysis_image'], $input['analysis_file'], $input['category_ids']);
@@ -121,12 +134,14 @@ class ProductCBDMutator
             // Mettre à jour les champs du produit
             $product->fill($input);
             
-            // Mettre à jour les catégories
+            // Mettre à jour les catégories (priorité à category_ids puis category_id)
             if ($categoryIds !== null) {
                 $product->categories()->sync($categoryIds);
+            } elseif ($categoryId !== null) {
+                $product->categories()->sync([$categoryId]);
             }
             
-            // Gérer les nouvelles images
+            // Gérer les nouvelles images (public/product_images/{id}/...)
             if ($images !== null) {
                 // Supprimer les anciennes images
                 if (!empty($product->images)) {
@@ -134,13 +149,17 @@ class ProductCBDMutator
                         $this->getFileManager()->deleteFile($oldImage);
                     }
                 }
-                
+
                 // Uploader les nouvelles images
                 $uploadedImages = [];
                 foreach ($images as $image) {
                     try {
-                        $path = $this->getFileManager()->uploadProductImage($image, $product->id);
-                        $uploadedImages[] = $path;
+                        if ($image instanceof UploadedFile) {
+                            $dir = "product_images/{$product->id}";
+                            $name = (string) Str::uuid() . '.' . strtolower($image->getClientOriginalExtension());
+                            Storage::disk('public_web')->putFileAs($dir, $image, $name);
+                            $uploadedImages[] = "$dir/$name";
+                        }
                     } catch (\Exception $e) {
                         Log::error('Erreur upload image produit: ' . $e->getMessage());
                     }
@@ -156,12 +175,18 @@ class ProductCBDMutator
                 }
                 
                 try {
-                    $analysisPath = $this->getFileManager()->uploadAnalysisImage($analysisImage, $product->id);
-                    $product->analysis_file = $analysisPath;
                     if ($analysisImage instanceof UploadedFile) {
+                        $dir = "product_analysis/{$product->id}";
+                        $name = (string) Str::uuid() . '.' . strtolower($analysisImage->getClientOriginalExtension());
+                        Storage::disk('public_web')->putFileAs($dir, $analysisImage, $name);
+                        $analysisPath = "$dir/$name";
+                        
+                        $product->analysis_file = $analysisPath;
                         $product->analysis_file_original_name = $analysisImage->getClientOriginalName();
                         $product->analysis_file_size = $analysisImage->getSize();
                         $product->analysis_file_mime_type = $analysisImage->getMimeType();
+                    } else {
+                        $product->analysis_file = null;
                     }
                 } catch (\Exception $e) {
                     Log::error('Erreur upload image analyse: ' . $e->getMessage());
@@ -237,20 +262,25 @@ class ProductCBDMutator
         
         foreach ($images as $image) {
             try {
-                $path = $this->getFileManager()->uploadProductImage($image, $productId);
-                
-                // Ajouter l'image au produit
-                $currentImages = $product->images ?? [];
-                $currentImages[] = $path;
-                $product->images = $currentImages;
-                $product->save();
-                
-                $results[] = [
-                    'success' => true,
-                    'message' => 'Image uploadee avec succes',
-                    'url' => Storage::url($path),
-                    'path' => $path
-                ];
+                if ($image instanceof UploadedFile) {
+                    $dir = "product_images/{$productId}";
+                    $name = (string) Str::uuid() . '.' . strtolower($image->getClientOriginalExtension());
+                    Storage::disk('public_web')->putFileAs($dir, $image, $name);
+                    $path = "$dir/$name";
+
+                    // Ajouter l'image au produit
+                    $currentImages = $product->images ?? [];
+                    $currentImages[] = $path;
+                    $product->images = $currentImages;
+                    $product->save();
+
+                    $results[] = [
+                        'success' => true,
+                        'message' => 'Image uploadee avec succes',
+                        'url' => asset($path),
+                        'path' => $path
+                    ];
+                }
             } catch (\Exception $e) {
                 $results[] = [
                     'success' => false,
