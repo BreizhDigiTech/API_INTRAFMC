@@ -55,6 +55,9 @@ class UserMutator
         try {
             $updatedProfile = app(UserService::class)->updateProfile($args);
             return $updatedProfile;
+        } catch (CustomException $e) {
+            // Re-lancer les CustomException telles quelles
+            throw $e;
         } catch (\Exception $e) {
             throw new CustomException('Erreur interne', 'Impossible de mettre a jour le profil.');
         }

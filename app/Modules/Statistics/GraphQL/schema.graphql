@@ -1,0 +1,162 @@
+# ===============================
+# MODULE STATISTICS - SCHÉMA GRAPHQL
+# ===============================
+
+# Types de base pour les statistiques
+type StatisticsResponse {
+  success: Boolean!
+  message: String
+  data: JSON
+}
+
+# Statistiques des commandes
+type OrderStatistics {
+  totalRevenue: Float!
+  totalOrders: Int!
+  averageOrderValue: Float!
+  uniqueCustomers: Int!
+  topProducts: JSON!
+  topCustomers: JSON!
+}
+
+# Timeline des revenus
+type RevenueTimeline {
+  periods: JSON!
+  totalRevenue: Float!
+  totalOrders: Int!
+}
+
+# Croissance des clients
+type CustomerGrowthTimeline {
+  periods: JSON!
+  summary: JSON!
+  trends: JSON!
+}
+
+# Statistiques utilisateur
+type UserStatistics {
+  userId: ID!
+  userName: String!
+  email: String!
+  totalOrders: Int!
+  totalAmount: Float!
+  averageOrderValue: Float!
+  orderFrequency: Float!
+  daysSinceFirstOrder: Int!
+  customerSegment: String!
+  favoriteProducts: JSON!
+  favoriteCategories: JSON!
+  behaviorAnalysis: JSON!
+  recommendations: JSON!
+  lastOrderDate: String
+  memberSince: String!
+}
+
+# Statistiques de base des commandes
+type BasicOrderStats {
+  totalOrders: Int!
+  totalRevenue: Float!
+  averageOrderValue: Float!
+  popularProducts: JSON!
+}
+
+# Revenus mensuels
+type MonthlyRevenueData {
+  month: String!
+  revenue: Float!
+  orderCount: Int!
+}
+
+type MonthlyRevenueResponse {
+  data: [MonthlyRevenueData!]!
+  total_revenue: Float!
+  total_orders: Int!
+}
+
+# Énumérations
+enum TimeGrouping {
+  HOUR
+  DAY
+  WEEK
+  MONTH
+  QUARTER
+  YEAR
+}
+
+enum CustomerSegment {
+  VIP
+  PREMIUM
+  STANDARD
+  NEW
+  PROSPECT
+  AT_RISK
+}
+
+# Queries du module Statistics
+extend type Query {
+  # === STATISTIQUES DES COMMANDES ===
+  
+  # Statistiques générales des commandes
+  orderStatistics(
+    startDate: Date!
+    endDate: Date!
+    compareWithPrevious: Boolean = false
+  ): OrderStatistics!
+    @guard
+    @field(resolver: "App\\Modules\\Statistics\\GraphQL\\Queries\\OrderStatisticsQuery@getOrderStatistics")
+
+  # Timeline des revenus
+  revenueTimeline(
+    startDate: Date!
+    endDate: Date!
+    groupBy: TimeGrouping = DAY
+  ): RevenueTimeline!
+    @guard
+    @field(resolver: "App\\Modules\\Statistics\\GraphQL\\Queries\\OrderStatisticsQuery@getRevenueTimeline")
+
+  # Timeline de croissance client
+  customerGrowthTimeline(
+    startDate: Date
+    endDate: Date
+    groupBy: TimeGrouping = MONTH
+  ): CustomerGrowthTimeline!
+    @guard
+    @field(resolver: "App\\Modules\\Statistics\\GraphQL\\Queries\\OrderStatisticsQuery@getCustomerGrowthTimeline")
+
+  # === STATISTIQUES BASIQUES ===
+  
+  # Statistiques basiques des commandes
+  basicOrderStats(
+    startDate: Date!
+    endDate: Date!
+  ): BasicOrderStats!
+    @guard
+    @field(resolver: "App\\Modules\\Statistics\\GraphQL\\Queries\\OrderStatisticsQuery@getBasicOrderStats")
+    
+  # Revenus mensuels
+  monthlyRevenue(
+    months: Int = 12
+  ): MonthlyRevenueResponse!
+    @guard
+    @field(resolver: "App\\Modules\\Statistics\\GraphQL\\Queries\\OrderStatisticsQuery@getMonthlyRevenue")
+
+  # === STATISTIQUES UTILISATEUR ===
+  
+  # Statistiques des commandes d'un utilisateur
+  userOrderStatistics(
+    userId: ID
+    startDate: Date
+    endDate: Date
+  ): UserStatistics!
+    @guard
+    @field(resolver: "App\\Modules\\Statistics\\GraphQL\\Queries\\UserStatisticsQuery@getUserOrderStatistics")
+
+  # === STATISTIQUES GÉNÉRALES ===
+  
+  # Dashboard des statistiques générales
+  dashboardStats(
+    period: TimeGrouping = MONTH
+  ): JSON!
+    @guard
+    @field(resolver: "App\\Modules\\Statistics\\GraphQL\\Queries\\DashboardStatisticsQuery@getDashboardStats")
+}

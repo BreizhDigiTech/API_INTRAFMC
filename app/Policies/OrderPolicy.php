@@ -51,6 +51,15 @@ class OrderPolicy
     }
 
     /**
+     * Determine whether the user can view statistics.
+     * Tous les utilisateurs connectés peuvent voir les statistiques
+     */
+    public function viewStatistics(User $user): bool
+    {
+        return true; // Autoriser tous les utilisateurs connectés
+    }
+
+    /**
      * Determine whether the user can restore the model.
      */
     public function restore(User $user, Order $order): bool

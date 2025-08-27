@@ -6,6 +6,37 @@ type Category {
   products: [ProductCBD!]!
 }
 
+# Type enrichi pour les statistiques
+type CategoryWithCounts {
+  id: ID!
+  name: String!
+  slug: String!
+  description: String
+  productCount: Int!
+  parentId: ID
+  level: Int!
+  children: [CategoryWithCounts!]!
+  isActive: Boolean!
+  displayOrder: Int!
+  imageUrl: String
+}
+
+type PopularProduct {
+  id: ID!
+  name: String!
+  price: Float!
+  stock: Int!
+  orderCount: Int!
+  revenue: Float!
+}
+
+enum PopularityPeriod {
+  WEEK
+  MONTH
+  QUARTER
+  YEAR
+}
+
 input CreateCategoryInput {
   name: String!
   description: String
@@ -30,6 +61,22 @@ extend type Query {
     @guard(with: ["api"]) 
     @can(ability: "view", model: "App\\Models\\Category")
     @find(model: "App\\Models\\Category")
+
+  # === NOUVELLES API ENRICHIES ===
+  
+  # Catégories avec compteurs et informations enrichies
+  categoriesWithCounts: [CategoryWithCounts!]!
+    @guard(with: ["api"])
+    @field(resolver: "App\\Modules\\Category\\GraphQL\\Queries\\CategoryEnrichedQuery@getCategoriesWithCounts")
+
+  # Produits populaires par catégorie
+  popularProductsByCategory(
+    categoryId: ID!
+    limit: Int = 5
+    period: PopularityPeriod = MONTH
+  ): [PopularProduct!]!
+    @guard(with: ["api"])
+    @field(resolver: "App\\Modules\\Category\\GraphQL\\Queries\\CategoryEnrichedQuery@getPopularProductsByCategory")
 }
 
 extend type Mutation {

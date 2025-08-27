@@ -8,6 +8,28 @@ extend type Query {
   
   productCBD(id: ID! @eq): ProductCBD @find
 
+  # Recherche avancée de produits
+  searchProducts(
+    query: String
+    first: Int = 20
+    page: Int
+    category_id: ID
+    min_price: Float
+    max_price: Float
+    in_stock: Boolean
+  ): [ProductCBD!]! @field(resolver: "App\\Modules\\Product_CBD\\GraphQL\\Queries\\ProductSearchQuery@search")
+
+  # Recherche rapide par nom
+  searchProductsByName(
+    name: String!
+    limit: Int = 10
+  ): [ProductCBD!]! @field(resolver: "App\\Modules\\Product_CBD\\GraphQL\\Queries\\ProductSearchQuery@searchByName")
+
+  # Suggestions de recherche (autocomplétion)
+  productSuggestions(
+    query: String!
+  ): [String!]! @field(resolver: "App\\Modules\\Product_CBD\\GraphQL\\Queries\\ProductSearchQuery@suggestions")
+
   # Aliases legacy pour compatibilité tests existants
   products(
     first: Int = 20
@@ -15,6 +37,29 @@ extend type Query {
   ): [ProductCBD!]! @paginate(defaultCount: 20)
 
   product(id: ID! @eq): ProductCBD @find
+  
+  # === NOUVELLES API INSIGHTS ET PERFORMANCE ===
+  
+  # Insights de performance des produits
+  productPerformanceInsights(
+    productId: ID
+    startDate: Date
+    endDate: Date
+    limit: Int = 10
+  ): ProductInsights!
+    @guard(with: ["api"])
+    @can(ability: "viewAny", model: "App\\Models\\ProductCBD")
+    @field(resolver: "App\\Modules\\Product_CBD\\GraphQL\\Queries\\ProductInsightsQuery@getProductPerformanceInsights")
+  
+  # Tendances par catégorie
+  categoryTrends(
+    startDate: Date
+    endDate: Date
+    groupBy: TrendGrouping = MONTH
+  ): [CategoryTrend!]!
+    @guard(with: ["api"])
+    @can(ability: "viewAny", model: "App\\Models\\ProductCBD")
+    @field(resolver: "App\\Modules\\Product_CBD\\GraphQL\\Queries\\ProductInsightsQuery@getCategoryTrends")
 }
 
 extend type Mutation {
@@ -163,4 +208,204 @@ input UpdateProductCBDInput {
   analysis_file: Upload
   # Alias legacy pour compat
   analysis_image: Upload
+}
+
+# === TYPES POUR INSIGHTS ET PERFORMANCE ===
+
+type ProductInsights {
+  # Insights pour un produit spécifique
+  productId: ID
+  productName: String
+  currentPrice: Float
+  currentStock: Int
+  baseMetrics: ProductBaseMetrics
+  timelinePerformance: ProductTimelinePerformance
+  competitiveAnalysis: ProductCompetitiveAnalysis
+  predictions: ProductPredictions
+  recommendations: [ProductRecommendation!]
+  lastUpdated: DateTime
+  
+  # Insights pour plusieurs produits
+  timeRange: InsightsTimeRange
+  topPerformers: [ProductPerformer!]
+  decliningProducts: [ProductPerformer!]
+  opportunities: [ProductOpportunity!]
+  globalInsights: GlobalProductInsights
+  summary: ProductInsightsSummary
+}
+
+type ProductBaseMetrics {
+  totalOrders: Int!
+  totalQuantitySold: Int!
+  totalRevenue: Float!
+  averageUnitPrice: Float!
+  uniqueCustomers: Int!
+  conversionRate: Float!
+  returnRate: Float!
+  reorderRate: Float!
+  profitMargin: Float!
+}
+
+type ProductTimelinePerformance {
+  periods: [ProductPeriodData!]!
+  trend: TrendDirection!
+  seasonality: String
+  volatility: Float!
+  growthRate: Float!
+}
+
+type ProductPeriodData {
+  period: String!
+  orders: Int!
+  quantitySold: Int!
+  revenue: Float!
+  averageOrderValue: Float!
+}
+
+type ProductCompetitiveAnalysis {
+  topCompetitors: [CompetitorProduct!]!
+  marketShare: Float!
+  pricePositioning: PricePositioning!
+  competitiveAdvantages: [String!]!
+}
+
+type CompetitorProduct {
+  productId: ID!
+  productName: String!
+  price: Float!
+  revenue: Float!
+  orders: Int!
+}
+
+type ProductPredictions {
+  nextMonthRevenue: Float
+  nextMonthQuantity: Int
+  confidence: Float!
+  recommendation: String!
+  riskFactors: [String!]!
+}
+
+type ProductRecommendation {
+  type: RecommendationType!
+  priority: RecommendationPriority!
+  title: String!
+  description: String!
+  expectedImpact: String!
+}
+
+type CategoryTrend {
+  categoryId: ID!
+  categoryName: String!
+  periods: [CategoryPeriodData!]!
+  totalRevenue: Float!
+  totalOrders: Int!
+  trend: TrendDirection!
+  growthRate: Float!
+  marketShare: Float!
+}
+
+type CategoryPeriodData {
+  period: String!
+  revenue: Float!
+  orders: Int!
+  quantity: Int!
+}
+
+type ProductPerformer {
+  productId: ID!
+  productName: String!
+  currentPrice: Float!
+  revenue: Float!
+  growthRate: Float!
+  trendDirection: TrendDirection!
+  score: Float!
+}
+
+type ProductOpportunity {
+  productId: ID!
+  productName: String!
+  opportunityType: OpportunityType!
+  description: String!
+  potentialImpact: String!
+  difficulty: DifficultyLevel!
+}
+
+type GlobalProductInsights {
+  totalProductsAnalyzed: Int!
+  averageGrowthRate: Float!
+  topPerformingCategory: String!
+  decliningCategory: String!
+  marketTrends: [MarketTrend!]!
+}
+
+type MarketTrend {
+  trend: String!
+  impact: TrendImpact!
+  description: String!
+}
+
+type ProductInsightsSummary {
+  topPerformersCount: Int!
+  decliningProductsCount: Int!
+  opportunitiesCount: Int!
+  overallHealthScore: Float!
+}
+
+type InsightsTimeRange {
+  startDate: Date!
+  endDate: Date!
+}
+
+enum TrendGrouping {
+  DAY
+  WEEK
+  MONTH
+  QUARTER
+  YEAR
+}
+
+enum PricePositioning {
+  PREMIUM
+  AVERAGE
+  BUDGET
+  COMPETITIVE
+}
+
+enum RecommendationType {
+  PRICE_OPTIMIZATION
+  INVENTORY_MANAGEMENT
+  MARKETING_BOOST
+  QUALITY_IMPROVEMENT
+  CATEGORY_EXPANSION
+  SEASONAL_STRATEGY
+}
+
+enum RecommendationPriority {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum OpportunityType {
+  UNDERPRICED
+  OVERPRICED
+  STOCK_OPTIMIZATION
+  MARKETING_POTENTIAL
+  SEASONAL_OPPORTUNITY
+  CROSS_SELL_POTENTIAL
+}
+
+enum DifficultyLevel {
+  EASY
+  MEDIUM
+  HARD
+  COMPLEX
+}
+
+enum TrendImpact {
+  POSITIVE
+  NEGATIVE
+  NEUTRAL
+  MIXED
 }

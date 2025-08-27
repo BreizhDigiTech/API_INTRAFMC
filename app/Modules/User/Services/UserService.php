@@ -99,11 +99,46 @@ class UserService
     public function updateProfile(array $data)
     {
         $user = auth()->user();
-        $user->update([
-            'name' => $data['name'] ?? $user->name,
-            'email' => $data['email'] ?? $user->email,
-            'avatar' => $data['avatar'] ?? $user->avatar,
-        ]);
+        
+        // Préparer les données à mettre à jour (uniquement les champs fournis)
+        $updateData = [];
+        
+        // Champs de profil modifiables par l'utilisateur
+        $allowedFields = ['name', 'email', 'phone', 'address', 'birth_date', 'avatar'];
+        
+        foreach ($allowedFields as $field) {
+            if (array_key_exists($field, $data) && $data[$field] !== null) {
+                $updateData[$field] = $data[$field];
+            }
+        }
+        
+        // Validation spécifique pour l'email
+        if (isset($updateData['email']) && $updateData['email'] !== $user->email) {
+            // Vérifier que l'email n'est pas déjà utilisé
+            $existingUser = \App\Models\User::where('email', $updateData['email'])
+                                          ->where('id', '!=', $user->id)
+                                          ->first();
+            if ($existingUser) {
+                throw new \App\Exceptions\CustomException('Email déjà utilisé', 'Cette adresse email est déjà utilisée par un autre utilisateur.');
+            }
+        }
+        
+        // Traitement spécial pour l'avatar - stocker uniquement le chemin relatif
+        if (isset($updateData['avatar'])) {
+            // Si c'est une URL complète, extraire le chemin relatif
+            $avatar = $updateData['avatar'];
+            if (strpos($avatar, 'avatars/') !== false) {
+                // Extraire juste le nom de fichier à partir de l'URL
+                $pathParts = explode('avatars/', $avatar);
+                $updateData['avatar'] = 'avatars/' . end($pathParts);
+            }
+        }
+        
+        // Mettre à jour uniquement les champs fournis
+        if (!empty($updateData)) {
+            $user->update($updateData);
+        }
+        
         return $user;
     }
 

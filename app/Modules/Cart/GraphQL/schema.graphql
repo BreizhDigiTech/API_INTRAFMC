@@ -28,6 +28,26 @@ input UpdateCartItemInput {
 extend type Query {
   myCart: [Cart!]! @guard @field(resolver: "App\\Modules\\Cart\\GraphQL\\Queries\\CartQuery@myCart")
   cartTotal: CartSummary @guard @field(resolver: "App\\Modules\\Cart\\GraphQL\\Queries\\CartQuery@cartTotal")
+  
+  # === NOUVELLES API SUGGESTIONS ET PANIERS SAUVEGARDÉS ===
+  
+  # Suggestions de produits basées sur le panier actuel
+  cartSuggestions(
+    limit: Int = 5
+    type: SuggestionType = ALL
+  ): [ProductSuggestion!]!
+    @guard
+    @field(resolver: "App\\Modules\\Cart\\GraphQL\\Queries\\CartSuggestionsQuery@getCartSuggestions")
+  
+  # Paniers sauvegardés de l'utilisateur
+  # savedCarts: [SavedCart!]!
+  #   @guard
+  #   @field(resolver: "App\\Modules\\Cart\\GraphQL\\Queries\\CartSuggestionsQuery@getSavedCarts")
+  
+  # Panier abandonné de l'utilisateur
+  # abandonedCart(daysSinceAbandoned: Int = 7): AbandonedCart
+  #   @guard
+  #   @field(resolver: "App\\Modules\\Cart\\GraphQL\\Queries\\CartSuggestionsQuery@getAbandonedCarts")
 }
 
 extend type Mutation {
@@ -46,4 +66,98 @@ extend type Mutation {
   clearCart: DeleteResponse
     @guard
     @field(resolver: "App\\Modules\\Cart\\GraphQL\\Mutations\\CartMutator@clearCart")
+  
+  # === NOUVELLES MUTATIONS PANIERS SAUVEGARDÉS ===
+  
+  # TODO: Implémenter les fonctionnalités de paniers sauvegardés
+  # Sauvegarder le panier actuel
+  # saveCurrentCart(name: String): SaveCartResponse!
+  #   @guard
+  #   @field(resolver: "App\\Modules\\Cart\\GraphQL\\Queries\\CartSuggestionsQuery@saveCurrentCart")
+  
+  # Restaurer un panier sauvegardé
+  # restoreSavedCart(savedCartId: ID!): RestoreCartResponse!
+  #   @guard
+  #   @field(resolver: "App\\Modules\\Cart\\GraphQL\\Mutations\\CartMutator@restoreSavedCart")
+  
+  # Supprimer un panier sauvegardé
+  # deleteSavedCart(savedCartId: ID!): DeleteResponse!
+  #   @guard
+  #   @field(resolver: "App\\Modules\\Cart\\GraphQL\\Mutations\\CartMutator@deleteSavedCart")
+}
+
+# === TYPES POUR SUGGESTIONS ET PANIERS SAUVEGARDÉS ===
+
+type ProductSuggestion {
+  productId: ID!
+  productName: String!
+  price: Float!
+  suggestionType: CartSuggestionType!
+  reason: String!
+  score: Float!
+  frequency: Int
+  replaces: ID # ID du produit remplacé (pour up-sell)
+}
+
+type SavedCart {
+  savedCartId: ID!
+  name: String!
+  createdAt: Date!
+  itemCount: Int!
+  totalValue: Float!
+  items: [SavedCartItem!]!
+}
+
+type SavedCartItem {
+  productId: ID!
+  productName: String!
+  quantity: Int!
+  unitPrice: Float!
+  totalPrice: Float!
+}
+
+type AbandonedCart {
+  cartId: String!
+  abandonedDate: Date!
+  daysSinceAbandoned: Int!
+  itemCount: Int!
+  totalValue: Float!
+  items: [AbandonedCartItem!]!
+}
+
+type AbandonedCartItem {
+  productId: ID!
+  productName: String!
+  quantity: Int!
+  unitPrice: Float!
+  totalPrice: Float!
+}
+
+type SaveCartResponse {
+  success: Boolean!
+  message: String!
+  savedCartId: ID!
+  name: String!
+}
+
+type RestoreCartResponse {
+  success: Boolean!
+  message: String!
+  itemsRestored: Int!
+}
+
+enum CartSuggestionType {
+  ALL
+  CROSS_SELL
+  UP_SELL
+  FREQUENTLY_BOUGHT
+  REPURCHASE
+  POPULAR
+}
+
+enum SuggestionType {
+  ALL
+  CROSS_SELL
+  UP_SELL
+  FREQUENTLY_BOUGHT
 }
