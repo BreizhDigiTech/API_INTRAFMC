@@ -65,9 +65,13 @@ query Me {
     address
     birth_date
     avatar
+    avatar_original_name
+    avatar_size
     is_admin
     is_active
+    email_verified_at
     created_at
+    updated_at
   }
 }
 ```
@@ -129,6 +133,27 @@ mutation ResendVerificationEmail($email: String!) {
 
 ## 👥 3. Gestion Utilisateurs
 
+> **⚡ Informations complètes** : Toutes les requêtes utilisateur retournent **TOUS** les champs disponibles
+
+### 📋 Champs Utilisateur Complets
+
+| Champ | Type | Description | Exemple |
+|-------|------|-------------|---------|
+| `id` | ID! | Identifiant unique | "1" |
+| `name` | String! | Nom complet | "Jean Dupont" |
+| `email` | String! | Adresse email | "jean@example.com" |
+| `phone` | String | Téléphone | "+33 6 12 34 56 78" |
+| `address` | String | Adresse complète | "123 Rue de la Paix, Paris" |
+| `birth_date` | Date | Date de naissance | "1990-05-15" |
+| `avatar` | String | URL avatar (complète) | "http://localhost/storage/avatars/jean.jpg" |
+| `avatar_original_name` | String | Nom fichier original | "photo-profil.jpg" |
+| `avatar_size` | Int | Taille fichier (bytes) | 245760 |
+| `is_admin` | Boolean | Statut administrateur | true/false |
+| `is_active` | Boolean | Compte actif | true/false |
+| `email_verified_at` | String | Date vérification email | "2025-01-15T10:30:00.000000Z" |
+| `created_at` | DateTime | Date création compte | "2025-01-01T09:00:00.000000Z" |
+| `updated_at` | DateTime | Dernière mise à jour | "2025-08-26T14:30:00.000000Z" |
+
 ### Lister Utilisateurs (Admin)
 ```graphql
 query Users($first: Int, $page: Int) {
@@ -138,9 +163,15 @@ query Users($first: Int, $page: Int) {
     email
     phone
     address
+    birth_date
+    avatar
+    avatar_original_name
+    avatar_size
     is_admin
     is_active
+    email_verified_at
     created_at
+    updated_at
   }
 }
 ```
@@ -167,12 +198,42 @@ query User($id: ID!) {
 
 ### Modifier Utilisateur (Admin)
 ```graphql
-mutation UpdateUser($id: ID!, $name: String, $email: String, $is_active: Boolean) {
-  updateUser(id: $id, name: $name, email: $email, is_active: $is_active) {
+mutation UpdateUser(
+  $id: ID!
+  $name: String
+  $email: String
+  $phone: String
+  $address: String
+  $birth_date: Date
+  $avatar: String
+  $is_active: Boolean
+  $is_admin: Boolean
+) {
+  updateUser(
+    id: $id
+    name: $name
+    email: $email
+    phone: $phone
+    address: $address
+    birth_date: $birth_date
+    avatar: $avatar
+    is_active: $is_active
+    is_admin: $is_admin
+  ) {
     id
     name
     email
+    phone
+    address
+    birth_date
+    avatar
+    avatar_original_name
+    avatar_size
+    is_admin
     is_active
+    email_verified_at
+    created_at
+    updated_at
   }
 }
 ```
@@ -204,6 +265,12 @@ mutation UpdateProfile(
     address
     birth_date
     avatar
+    avatar_original_name
+    avatar_size
+    is_admin
+    is_active
+    email_verified_at
+    created_at
     updated_at
   }
 }
@@ -222,11 +289,18 @@ mutation UpdateProfile(
 }
 ```
 
+**Champs disponibles dans la réponse** :
+- ✅ **Informations personnelles** : `id`, `name`, `email`, `phone`, `address`, `birth_date`
+- ✅ **Avatar** : `avatar` (URL complète), `avatar_original_name`, `avatar_size`
+- ✅ **Statuts** : `is_admin`, `is_active`, `email_verified_at`
+- ✅ **Métadonnées** : `created_at`, `updated_at`
+
 **Notes importantes** :
 - ✅ L'utilisateur ne peut modifier que son propre profil
 - ✅ Tous les champs sont optionnels 
 - ✅ L'email est vérifié pour éviter les doublons
 - ✅ Les champs non fournis conservent leur valeur actuelle
+- ✅ **Réponse complète** : Tous les champs utilisateur sont retournés (`avatar_original_name`, `avatar_size`, `email_verified_at`, etc.)
 
 ### Changer Mot de Passe
 ```graphql
@@ -1154,9 +1228,15 @@ interface User {
   email: string;
   phone?: string;
   address?: string;
+  birth_date?: string;
+  avatar?: string;
+  avatar_original_name?: string;
+  avatar_size?: number;
   is_admin: boolean;
   is_active: boolean;
+  email_verified_at?: string;
   created_at: string;
+  updated_at: string;
 }
 
 interface ProductCBD {
@@ -1255,7 +1335,7 @@ const useUserProfile = () => {
   };
 };
 
-// Composant Profil
+// Composant Profil Complet
 const ProfilePage = () => {
   const { user, updateProfile } = useUserProfile();
   const [formData, setFormData] = useState({
@@ -1292,7 +1372,15 @@ const ProfilePage = () => {
       });
       
       if (Object.keys(changedFields).length > 0) {
-        await updateProfile(changedFields);
+        const updatedUser = await updateProfile(changedFields);
+        console.log('Profil mis à jour:', updatedUser);
+        
+        // Accès à toutes les informations utilisateur
+        console.log('Avatar original:', updatedUser.avatar_original_name);
+        console.log('Taille avatar:', updatedUser.avatar_size);
+        console.log('Email vérifié le:', updatedUser.email_verified_at);
+        console.log('Membre depuis:', updatedUser.created_at);
+        
         alert('Profil mis à jour avec succès !');
       }
     } catch (error) {
@@ -1300,71 +1388,117 @@ const ProfilePage = () => {
     }
   };
   
+  if (loading) return <div>Chargement...</div>;
+  
   return (
-    <form onSubmit={handleSubmit}>
-      <div>
-        <label>Nom complet</label>
-        <input 
-          type="text"
-          value={formData.name}
-          onChange={(e) => setFormData({...formData, name: e.target.value})}
-        />
+    <div className="profile-page">
+      <div className="user-info">
+        <h2>Profil de {user?.name}</h2>
+        <div className="user-metadata">
+          <p><strong>ID:</strong> {user?.id}</p>
+          <p><strong>Email vérifié:</strong> {user?.email_verified_at ? 'Oui' : 'Non'}</p>
+          <p><strong>Statut:</strong> {user?.is_admin ? 'Administrateur' : 'Utilisateur'}</p>
+          <p><strong>Compte:</strong> {user?.is_active ? 'Actif' : 'Inactif'}</p>
+          <p><strong>Membre depuis:</strong> {new Date(user?.created_at).toLocaleDateString()}</p>
+          <p><strong>Dernière MAJ:</strong> {new Date(user?.updated_at).toLocaleDateString()}</p>
+          {user?.avatar_original_name && (
+            <p><strong>Avatar:</strong> {user.avatar_original_name} ({user.avatar_size} bytes)</p>
+          )}
+        </div>
       </div>
       
-      <div>
-        <label>Email</label>
-        <input 
-          type="email"
-          value={formData.email}
-          onChange={(e) => setFormData({...formData, email: e.target.value})}
-        />
-      </div>
-      
-      <div>
-        <label>Téléphone</label>
-        <input 
-          type="tel"
-          value={formData.phone}
-          onChange={(e) => setFormData({...formData, phone: e.target.value})}
-          placeholder="+33 6 12 34 56 78"
-        />
-      </div>
-      
-      <div>
-        <label>Adresse</label>
-        <textarea 
-          value={formData.address}
-          onChange={(e) => setFormData({...formData, address: e.target.value})}
-          placeholder="123 Rue de la Paix, 75001 Paris"
-          rows="3"
-        />
-      </div>
-      
-      <div>
-        <label>Date de naissance</label>
-        <input 
-          type="date"
-          value={formData.birth_date}
-          onChange={(e) => setFormData({...formData, birth_date: e.target.value})}
-        />
-      </div>
-      
-      <div>
-        <label>Avatar (URL)</label>
-        <input 
-          type="url"
-          value={formData.avatar}
-          onChange={(e) => setFormData({...formData, avatar: e.target.value})}
-          placeholder="https://example.com/avatar.jpg"
-        />
-      </div>
-      
-      <button type="submit">Mettre à jour le profil</button>
-    </form>
+      <form onSubmit={handleSubmit} className="profile-form">
+        <div>
+          <label>Nom complet</label>
+          <input 
+            type="text"
+            value={formData.name}
+            onChange={(e) => setFormData({...formData, name: e.target.value})}
+          />
+        </div>
+        
+        <div>
+          <label>Email</label>
+          <input 
+            type="email"
+            value={formData.email}
+            onChange={(e) => setFormData({...formData, email: e.target.value})}
+          />
+        </div>
+        
+        <div>
+          <label>Téléphone</label>
+          <input 
+            type="tel"
+            value={formData.phone}
+            onChange={(e) => setFormData({...formData, phone: e.target.value})}
+            placeholder="+33 6 12 34 56 78"
+          />
+        </div>
+        
+        <div>
+          <label>Adresse</label>
+          <textarea 
+            value={formData.address}
+            onChange={(e) => setFormData({...formData, address: e.target.value})}
+            placeholder="123 Rue de la Paix, 75001 Paris"
+            rows="3"
+          />
+        </div>
+        
+        <div>
+          <label>Date de naissance</label>
+          <input 
+            type="date"
+            value={formData.birth_date}
+            onChange={(e) => setFormData({...formData, birth_date: e.target.value})}
+          />
+        </div>
+        
+        <div>
+          <label>Avatar (URL)</label>
+          <input 
+            type="url"
+            value={formData.avatar}
+            onChange={(e) => setFormData({...formData, avatar: e.target.value})}
+            placeholder="https://example.com/avatar.jpg"
+          />
+          {user?.avatar && (
+            <div className="current-avatar">
+              <img src={user.avatar} alt="Avatar actuel" style={{width: '60px', height: '60px', borderRadius: '50%'}} />
+              <small>Avatar actuel</small>
+            </div>
+          )}
+        </div>
+        
+        <button type="submit">Mettre à jour le profil</button>
+      </form>
+    </div>
   );
 };
 
 // Requêtes GraphQL
+const ME_QUERY = gql`
+  query Me {
+    me {
+      id
+      name
+      email
+      phone
+      address
+      birth_date
+      avatar
+      avatar_original_name
+      avatar_size
+      is_admin
+      is_active
+      email_verified_at
+      created_at
+      updated_at
+    }
+  }
+`;
+
 const UPDATE_PROFILE_MUTATION = gql`
   mutation UpdateProfile(
     $id: ID!
@@ -1391,10 +1525,172 @@ const UPDATE_PROFILE_MUTATION = gql`
       address
       birth_date
       avatar
+      avatar_original_name
+      avatar_size
+      is_admin
+      is_active
+      email_verified_at
+      created_at
       updated_at
     }
   }
 `;
+
+const USERS_QUERY = gql`
+  query Users($first: Int, $page: Int) {
+    users(first: $first, page: $page) {
+      id
+      name
+      email
+      phone
+      address
+      birth_date
+      avatar
+      avatar_original_name
+      avatar_size
+      is_admin
+      is_active
+      email_verified_at
+      created_at
+      updated_at
+    }
+  }
+`;
+```
+
+### 🔍 Exemple d'Utilisation Complète des Données Utilisateur
+
+```javascript
+// Composant Dashboard Utilisateur montrant toutes les informations
+const UserDashboard = ({ userId }) => {
+  const { data, loading } = useQuery(USER_QUERY, {
+    variables: { id: userId }
+  });
+  
+  if (loading) return <div>Chargement...</div>;
+  
+  const user = data?.user;
+  
+  return (
+    <div className="user-dashboard">
+      <div className="user-header">
+        <div className="avatar-section">
+          {user.avatar ? (
+            <img 
+              src={user.avatar} 
+              alt={`Avatar de ${user.name}`}
+              className="user-avatar"
+            />
+          ) : (
+            <div className="default-avatar">{user.name.charAt(0)}</div>
+          )}
+          {user.avatar_original_name && (
+            <div className="avatar-info">
+              <small>{user.avatar_original_name}</small>
+              <small>{(user.avatar_size / 1024).toFixed(1)} KB</small>
+            </div>
+          )}
+        </div>
+        
+        <div className="user-details">
+          <h1>{user.name}</h1>
+          <p className="email">{user.email}</p>
+          
+          <div className="status-badges">
+            <span className={`badge ${user.is_active ? 'active' : 'inactive'}`}>
+              {user.is_active ? 'Actif' : 'Inactif'}
+            </span>
+            {user.is_admin && (
+              <span className="badge admin">Administrateur</span>
+            )}
+            {user.email_verified_at && (
+              <span className="badge verified">Email vérifié</span>
+            )}
+          </div>
+        </div>
+      </div>
+      
+      <div className="user-info-grid">
+        <div className="info-card">
+          <h3>Informations Personnelles</h3>
+          <div className="info-row">
+            <label>Téléphone:</label>
+            <span>{user.phone || 'Non renseigné'}</span>
+          </div>
+          <div className="info-row">
+            <label>Adresse:</label>
+            <span>{user.address || 'Non renseignée'}</span>
+          </div>
+          <div className="info-row">
+            <label>Date de naissance:</label>
+            <span>
+              {user.birth_date 
+                ? new Date(user.birth_date).toLocaleDateString('fr-FR')
+                : 'Non renseignée'
+              }
+            </span>
+          </div>
+        </div>
+        
+        <div className="info-card">
+          <h3>Informations Compte</h3>
+          <div className="info-row">
+            <label>ID Utilisateur:</label>
+            <span>{user.id}</span>
+          </div>
+          <div className="info-row">
+            <label>Membre depuis:</label>
+            <span>{new Date(user.created_at).toLocaleDateString('fr-FR')}</span>
+          </div>
+          <div className="info-row">
+            <label>Dernière mise à jour:</label>
+            <span>{new Date(user.updated_at).toLocaleDateString('fr-FR')}</span>
+          </div>
+          {user.email_verified_at && (
+            <div className="info-row">
+              <label>Email vérifié le:</label>
+              <span>{new Date(user.email_verified_at).toLocaleDateString('fr-FR')}</span>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Hook pour obtenir les statistiques utilisateur avec toutes les infos
+const useUserStats = (userId) => {
+  const { data: userData } = useQuery(USER_QUERY, {
+    variables: { id: userId }
+  });
+  
+  const { data: statsData } = useQuery(USER_ORDER_STATISTICS, {
+    variables: { userId }
+  });
+  
+  return {
+    user: userData?.user,
+    stats: statsData?.userOrderStatistics,
+    
+    // Fonctions utilitaires
+    isNewUser: () => {
+      if (!userData?.user?.created_at) return false;
+      const accountAge = Date.now() - new Date(userData.user.created_at).getTime();
+      return accountAge < (30 * 24 * 60 * 60 * 1000); // Moins de 30 jours
+    },
+    
+    hasCompleteProfile: () => {
+      const user = userData?.user;
+      return user?.phone && user?.address && user?.birth_date;
+    },
+    
+    getAccountAge: () => {
+      if (!userData?.user?.created_at) return 0;
+      const ageMs = Date.now() - new Date(userData.user.created_at).getTime();
+      return Math.floor(ageMs / (24 * 60 * 60 * 1000)); // Jours
+    }
+  };
+};
 ```
 
 ### Gestion Panier
@@ -1519,7 +1815,8 @@ const safeJSONParse = (jsonString, fallback = []) => {
 
 ---
 
-**Documentation mise à jour** : 26 août 2025  
+**Documentation mise à jour** : 27 août 2025  
 **Version API** : v1.0  
 **Modules couverts** : 10/10  
-**Endpoints documentés** : 50+ requêtes et mutations
+**Endpoints documentés** : 50+ requêtes et mutations  
+**✅ NOUVEAU** : Toutes les informations utilisateur disponibles (14 champs complets incluant avatar_original_name, avatar_size, email_verified_at, etc.)

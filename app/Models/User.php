@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use DateTime;
+use DateTimeInterface;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -59,12 +61,23 @@ class User extends Authenticatable implements JWTSubject
     {
         return [
             'email_verified_at' => 'datetime', // Cast en objet DateTime
+            'created_at' => 'datetime', // Cast en objet DateTime
+            'updated_at' => 'datetime', // Cast en objet DateTime
             'birth_date' => 'date', // Cast en date
             'password' => 'hashed', // Cast pour le hachage du mot de passe
             'is_admin' => 'boolean', // Cast en booléen
             'is_active' => 'boolean', // Cast en booléen
             'avatar_size' => 'integer', // Cast en entier
         ];
+    }
+
+    /**
+     * Format the dates for JSON serialization in ISO 8601 format.
+     * Override the default serialization for better frontend compatibility.
+     */
+    protected function serializeDate(DateTimeInterface $date): string
+    {
+        return $date->format(DateTime::ATOM); // ISO 8601 format: 2025-08-27T08:47:17+00:00
     }
 
     /**
