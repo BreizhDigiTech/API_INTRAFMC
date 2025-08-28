@@ -16,6 +16,7 @@ class Kernel extends HttpKernel
         \Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull::class,
         \Illuminate\Foundation\Http\Middleware\TrustProxies::class,
         \Fruitcake\Cors\HandleCors::class,
+        \App\Http\Middleware\SecurityHeaders::class,
     ];
 
     /**
@@ -54,5 +55,6 @@ class Kernel extends HttpKernel
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'jwt.auth' => \Tymon\JWTAuth\Http\Middleware\Authenticate::class,
         'jwt.refresh' => \Tymon\JWTAuth\Http\Middleware\RefreshToken::class,
+        'graphql.rate.limit' => \App\Http\Middleware\GraphQLRateLimiter::class,
     ];
 }

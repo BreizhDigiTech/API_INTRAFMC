@@ -14,7 +14,7 @@ class OrdersSummaryQuery
             DB::raw('SUM(CASE WHEN status = "pending" THEN 1 ELSE 0 END) as pending_orders'),
             DB::raw('SUM(CASE WHEN status = "validated" OR status = "shipped" OR status = "delivered" THEN 1 ELSE 0 END) as validated_orders'),
             DB::raw('SUM(CASE WHEN status = "cancelled" THEN 1 ELSE 0 END) as cancelled_orders'),
-            DB::raw('SUM(total) as total_revenue')
+            DB::raw('SUM(CASE WHEN status != "cancelled" THEN total ELSE 0 END) as total_revenue')
         ])->first();
 
         return [
