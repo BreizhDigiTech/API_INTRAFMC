@@ -65,5 +65,15 @@ clover.xml
 *~
 .vscode/settings.json
 
+# Fichiers de debug et diagnostic
+debug_*.php
+diagnostic_*.php
+*_clean.*
+*_debug.*
+*_test.*
 
-public
+# Fichiers temporaires de développement
+direct_test.php
+final_test.php
+patch_*.php
+check_*.php

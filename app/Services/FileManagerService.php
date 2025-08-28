@@ -181,15 +181,18 @@ class FileManagerService
     }
 
     /**
-     * Generate a secure-ish URL for product images via API gateway endpoint.
+     * Generate URL for product images using Laravel's storage system.
+     * Replaced API gateway with direct storage URL generation.
      */
     public function getProductImageUrl(string $originalPath, ?string $variant = null): string
     {
-        $base = '/api/files/product-image/';
-        $payload = $originalPath . '|' . ($variant ?? 'original') . '|' . (config('app.key') ?? 'key');
-        $token = substr(hash('sha256', $payload), 0, 40);
-        $suffix = $variant ? ('?variant=' . urlencode($variant) . '&p=' . urlencode($originalPath)) : ('?p=' . urlencode($originalPath));
-        return $base . $token . $suffix;
+        // For product images, use the storage disk URL
+        if (Str::startsWith($originalPath, ['product_images/', '/product_images/'])) {
+            return asset(ltrim($originalPath, '/'));
+        }
+        
+        // Fallback to storage disk
+        return Storage::disk('public')->url($originalPath);
     }
 
     /**

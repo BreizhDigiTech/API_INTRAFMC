@@ -1,24 +1,9 @@
 <?php
 
-use App\Http\Controllers\Api\FileController;
+// Architecture GraphQL Pure - Pas de routes API REST
+// Toutes les opérations passent par GraphQL endpoint: /graphql
 
-// Routes pour servir les fichiers de manière sécurisée
-Route::get('/api/files/product-image/{path}', [FileController::class, 'getProductImage'])
-    ->name('api.files.product-image');
-
-Route::get('/api/files/analysis/{path}', [FileController::class, 'getAnalysisFile'])
-    ->name('api.files.analysis')
-    ->middleware('auth:api');
-
-Route::get('/api/files/avatar/{path}', [FileController::class, 'getAvatar'])
-    ->name('api.files.avatar')
-    ->middleware('auth:api');
-
-// Routes d'upload (API)
-Route::middleware(['auth:api'])->group(function () {
-    Route::post('/api/upload/product-image', [FileController::class, 'uploadProductImage']);
-    Route::post('/api/upload/analysis', [FileController::class, 'uploadAnalysisFile']);
-});
-
-// Fichier web.php minimal pour API GraphQL
-// Pas de routes web nécessaires - utilisez GraphQL via /graphql
+// Documentation:
+// - Uploads: Utilisez les mutations GraphQL uploadProductImages, uploadProductAnalysisFile
+// - Accès aux fichiers: Les URLs sont générées automatiquement dans les réponses GraphQL
+// - Authentification: JWT via header Authorization dans GraphQL
