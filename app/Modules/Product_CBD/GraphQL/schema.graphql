@@ -2,9 +2,9 @@ extend type Query {
   productsCBD(
     first: Int = 20
     page: Int
-    name: String @where(operator: "like")
-    category_id: ID @eq
-  ): [ProductCBD!]! @paginate(defaultCount: 20) @orderBy(column: "created_at", direction: DESC)
+    name: String
+    category_id: ID
+  ): ProductCBDPaginator @field(resolver: "App\\Modules\\Product_CBD\\GraphQL\\Queries\\ProductCBDQuery@productsCBD")
   
   productCBD(id: ID! @eq): ProductCBD @find
 
@@ -16,10 +16,10 @@ extend type Query {
     @field(resolver: "App\\Modules\\Product_CBD\\GraphQL\\Queries\\ProductCBDQuery@allProducts")
     @orderBy(column: "created_at", direction: DESC)
 
-  # Recherche avancée de produits
+  # Recherche avancée de produits - SANS LIMITE
   searchProducts(
     query: String
-    first: Int = 20
+    first: Int
     page: Int
     category_id: ID
     min_price: Float
@@ -27,10 +27,10 @@ extend type Query {
     in_stock: Boolean
   ): [ProductCBD!]! @field(resolver: "App\\Modules\\Product_CBD\\GraphQL\\Queries\\ProductSearchQuery@search")
 
-  # Recherche rapide par nom
+  # Recherche rapide par nom - SANS LIMITE
   searchProductsByName(
     name: String!
-    limit: Int = 10
+    limit: Int
   ): [ProductCBD!]! @field(resolver: "App\\Modules\\Product_CBD\\GraphQL\\Queries\\ProductSearchQuery@searchByName")
 
   # Suggestions de recherche (autocomplétion)
@@ -38,14 +38,6 @@ extend type Query {
     query: String!
   ): [String!]! @field(resolver: "App\\Modules\\Product_CBD\\GraphQL\\Queries\\ProductSearchQuery@suggestions")
 
-  # Aliases legacy pour compatibilité tests existants
-  products(
-    first: Int = 20
-    page: Int
-  ): [ProductCBD!]! @paginate(defaultCount: 20) @orderBy(column: "created_at", direction: DESC)
-
-  product(id: ID! @eq): ProductCBD @find
-  
   # === NOUVELLES API INSIGHTS ET PERFORMANCE ===
   
   # Insights de performance des produits
@@ -416,4 +408,9 @@ enum TrendImpact {
   NEGATIVE
   NEUTRAL
   MIXED
+}
+
+type ProductCBDPaginator {
+  paginatorInfo: PaginatorInfo!
+  data: [ProductCBD!]!
 }

@@ -1,0 +1,333 @@
+# ===============================
+# MODULE FINANCIAL RECAP - SCHÉMA GRAPHQL
+# ===============================
+
+# Types de base pour les récapitulatifs financiers
+type FinancialRecapSummary {
+  # Résumé général
+  orders: OrdersRecap!
+  arrivals: ArrivalsRecap!
+  balance: BalanceInfo!
+  period: PeriodInfo!
+  # Indicateur de complétude des données
+  dataCompleteness: DataCompletenessInfo!
+}
+
+type OrdersRecap {
+  totalCount: Int!
+  totalAmount: Float!
+  averageAmount: Float!
+  byStatus: [OrderStatusRecap!]!
+  topCustomers: [CustomerOrderRecap!]!
+  isComplete: Boolean!  # Indique si toutes les données ont été récupérées
+}
+
+type ArrivalsRecap {
+  totalCount: Int!
+  totalAmount: Float!
+  averageAmount: Float!
+  byStatus: [ArrivalStatusRecap!]!
+  topSuppliers: [SupplierArrivalRecap!]!
+  isComplete: Boolean!  # Indique si toutes les données ont été récupérées
+}
+
+type BalanceInfo {
+  revenue: Float!         # Revenus (commandes validées)
+  expenses: Float!        # Dépenses (arrivages validés)
+  balance: Float!         # Solde (revenus - dépenses)
+  profitMargin: Float!    # Marge bénéficiaire en %
+}
+
+type PeriodInfo {
+  startDate: Date!
+  endDate: Date!
+  duration: Int!          # Nombre de jours
+  label: String!          # "Janvier 2025", "Q1 2025", etc.
+}
+
+# Informations sur la complétude des données
+type DataCompletenessInfo {
+  isComplete: Boolean!           # Toutes les données ont été récupérées
+  ordersRetrieved: Int!         # Nombre de commandes récupérées
+  arrivalsRetrieved: Int!       # Nombre d'arrivages récupérés
+  possibleLimitation: Boolean!  # Limitation possible détectée
+  recommendation: String        # Recommandation pour l'utilisateur
+}
+
+# Détails des commandes par statut
+type OrderStatusRecap {
+  status: String!
+  count: Int!
+  amount: Float!
+  percentage: Float!
+}
+
+# Détails des arrivages par statut
+type ArrivalStatusRecap {
+  status: String!
+  count: Int!
+  amount: Float!
+  percentage: Float!
+}
+
+# Top clients
+type CustomerOrderRecap {
+  userId: ID!
+  userName: String!
+  userEmail: String!
+  orderCount: Int!
+  totalAmount: Float!
+  averageAmount: Float!
+  lastOrderDate: DateTime!
+  orders: [UserOrderDetail!]!
+}
+
+# Détails des commandes utilisateur
+type UserOrderDetail {
+  id: ID!
+  total: Float!
+  status: String!
+  productCount: Int!
+  createdAt: DateTime!
+  products: [OrderProductSummary!]!
+}
+
+type OrderProductSummary {
+  productId: ID!
+  productName: String!
+  quantity: Int!
+  unitPrice: Float!
+  totalPrice: Float!
+}
+
+# Top fournisseurs
+type SupplierArrivalRecap {
+  supplierId: ID!
+  supplierName: String!
+  arrivalCount: Int!
+  totalAmount: Float!
+  averageAmount: Float!
+  lastArrivalDate: DateTime!
+}
+
+# Filtres pour les récapitulatifs avec support de récupération complète
+input FinancialRecapFilters {
+  startDate: Date!
+  endDate: Date!
+  orderStatuses: [String!]
+  arrivalStatuses: [String!]
+  customerIds: [ID!]
+  supplierIds: [ID!]
+  groupBy: TimeGrouping
+  # Nouvelles options pour la récupération complète
+  pagination: PaginationOptions
+}
+
+# Options de pagination pour la récupération complète
+input PaginationOptions {
+  limit: Int
+  page: Int = 1
+  includeAll: Boolean = false  # Force la récupération de toutes les données
+}
+
+# Récapitulatif par utilisateur détaillé
+type UserFinancialRecap {
+  user: UserBasicInfo!
+  orders: [UserOrderDetail!]!
+  summary: UserOrderSummary!
+  timeline: [UserOrderTimeline!]!
+}
+
+type UserBasicInfo {
+  id: ID!
+  name: String!
+  email: String!
+  phone: String
+  createdAt: DateTime!
+  isActive: Boolean!
+}
+
+type UserOrderSummary {
+  totalOrders: Int!
+  totalAmount: Float!
+  averageAmount: Float!
+  firstOrderDate: DateTime
+  lastOrderDate: DateTime
+  favoriteProducts: [FavoriteProduct!]!
+  orderFrequency: Float!  # Commandes par mois
+}
+
+type UserOrderTimeline {
+  date: Date!
+  orderCount: Int!
+  totalAmount: Float!
+  orders: [UserOrderDetail!]!
+}
+
+type FavoriteProduct {
+  productId: ID!
+  productName: String!
+  orderCount: Int!
+  totalQuantity: Int!
+  totalAmount: Float!
+}
+
+# Timeline des données financières
+type FinancialTimeline {
+  periods: [FinancialPeriod!]!
+  totals: FinancialTotals!
+  trends: FinancialTrends!
+}
+
+type FinancialPeriod {
+  date: Date!
+  label: String!
+  orders: PeriodOrderData!
+  arrivals: PeriodArrivalData!
+  balance: Float!
+}
+
+type PeriodOrderData {
+  count: Int!
+  amount: Float!
+  averageAmount: Float!
+}
+
+type PeriodArrivalData {
+  count: Int!
+  amount: Float!
+  averageAmount: Float!
+}
+
+type FinancialTotals {
+  totalRevenue: Float!
+  totalExpenses: Float!
+  totalBalance: Float!
+  totalOrders: Int!
+  totalArrivals: Int!
+}
+
+type FinancialTrends {
+  revenueGrowth: Float!     # % de croissance des revenus
+  expenseGrowth: Float!     # % de croissance des dépenses
+  orderGrowth: Float!       # % de croissance des commandes
+  arrivalGrowth: Float!     # % de croissance des arrivages
+  profitTrend: TrendDirection!
+}
+
+extend type Query {
+  # Récapitulatif financier général
+  financialRecapSummary(filters: FinancialRecapFilters!): FinancialRecapSummary!
+    @guard
+    @field(resolver: "App\\Modules\\FinancialRecap\\GraphQL\\Queries\\FinancialRecapQuery@getSummary")
+
+  # Timeline financière
+  financialTimeline(filters: FinancialRecapFilters!): FinancialTimeline!
+    @guard
+    @field(resolver: "App\\Modules\\FinancialRecap\\GraphQL\\Queries\\FinancialRecapQuery@getTimeline")
+
+  # Récapitulatif par utilisateur
+  userFinancialRecap(
+    userId: ID!
+    startDate: Date!
+    endDate: Date!
+  ): UserFinancialRecap!
+    @guard
+    @field(resolver: "App\\Modules\\FinancialRecap\\GraphQL\\Queries\\UserFinancialRecapQuery@getUserRecap")
+
+  # Liste des utilisateurs avec leurs récapitulatifs
+  usersFinancialRecaps(
+    filters: FinancialRecapFilters!
+    first: Int = 20
+    page: Int = 1
+  ): [UserFinancialRecap!]!
+    @guard
+    @paginate(
+      defaultCount: 20,
+      maxCount: 100,
+      builder: "App\\Modules\\FinancialRecap\\GraphQL\\Queries\\UserFinancialRecapQuery@getUsersRecaps"
+    )
+
+  # NOUVEAU: Tableau simplifié des utilisateurs avec stats par période
+  usersOrdersSummary(filters: UsersOrdersSummaryFilters!): [UserOrdersSummary!]!
+    @guard
+    @field(resolver: "App\\Modules\\FinancialRecap\\GraphQL\\Queries\\UserFinancialRecapQuery@getUsersOrdersSummary")
+
+  # Données pour les filtres
+  financialRecapFilterOptions: FinancialRecapFilterOptions!
+    @guard
+    @field(resolver: "App\\Modules\\FinancialRecap\\GraphQL\\Queries\\FinancialRecapQuery@getFilterOptions")
+}
+
+# NOUVEAU: Type pour le résumé simplifié des commandes utilisateurs
+type UserOrdersSummary {
+  userId: ID!
+  userName: String!
+  userEmail: String!
+  userPhone: String
+  userCreatedAt: DateTime!
+  
+  periodStats: UserPeriodStats!
+  performance: UserPerformance!
+}
+
+type UserPeriodStats {
+  startDate: Date!
+  endDate: Date!
+  totalOrders: Int!
+  totalAmount: Float!
+  averageOrderAmount: Float!
+  firstOrderDate: DateTime
+  lastOrderDate: DateTime
+}
+
+type UserPerformance {
+  isActiveCustomer: Boolean!
+  orderFrequency: Float!        # Commandes par mois
+  customerSegment: String!      # Premium, Régulier, Fidèle, Occasionnel, Inactif
+}
+
+# NOUVEAU: Filtres pour le résumé des commandes utilisateurs
+input UsersOrdersSummaryFilters {
+  startDate: Date!
+  endDate: Date!
+  orderStatuses: [String!]      # Filtrer par statut de commande
+  customerIds: [ID!]            # Filtrer par utilisateurs spécifiques
+  onlyActiveCustomers: Boolean  # Ne récupérer que les clients avec commandes
+  orderBy: String               # total_amount, total_orders, user_name
+  orderDirection: String        # asc, desc
+}
+
+type FinancialRecapFilterOptions {
+  orderStatuses: [StatusOption!]!
+  arrivalStatuses: [StatusOption!]!
+  customers: [CustomerOption!]!
+  suppliers: [SupplierOption!]!
+  datePresets: [DatePresetOption!]!
+}
+
+type StatusOption {
+  value: String!
+  label: String!
+  count: Int!
+}
+
+type CustomerOption {
+  id: ID!
+  name: String!
+  email: String!
+  orderCount: Int!
+}
+
+type SupplierOption {
+  id: ID!
+  name: String!
+  arrivalCount: Int!
+}
+
+type DatePresetOption {
+  value: String!
+  label: String!
+  startDate: Date!
+  endDate: Date!
+}

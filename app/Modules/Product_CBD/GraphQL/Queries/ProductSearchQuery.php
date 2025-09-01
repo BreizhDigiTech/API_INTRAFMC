@@ -69,7 +69,7 @@ class ProductSearchQuery
     {
         $name = $args['name'];
         
-        return ProductCBD::with(['categories'])
+        $query = ProductCBD::with(['categories'])
             ->where('name', 'like', '%' . $name . '%')
             ->orderByRaw("
                 CASE 
@@ -77,9 +77,14 @@ class ProductSearchQuery
                     WHEN name LIKE ? THEN 2
                     ELSE 3
                 END, name ASC, created_at DESC
-            ", [$name, $name . '%'])
-            ->limit($args['limit'] ?? 10)
-            ->get();
+            ", [$name, $name . '%']);
+        
+        // 🔥 SUPPRESSION DE LA LIMITE - Applique la limite seulement si spécifiée
+        if (isset($args['limit']) && $args['limit'] > 0) {
+            $query->limit($args['limit']);
+        }
+        
+        return $query->get();
     }
     
     /**
@@ -93,12 +98,64 @@ class ProductSearchQuery
             return [];
         }
         
-        return ProductCBD::select('name')
+        $dbQuery = ProductCBD::select('name')
             ->where('name', 'like', $query . '%')
             ->distinct()
-            ->orderByDesc('created_at') // Suggestions des produits les plus récents d'abord
-            ->limit(5)
-            ->pluck('name')
-            ->toArray();
+            ->orderByDesc('created_at'); // Suggestions des produits les plus récents d'abord
+        
+        // 🔥 LIMITE OPTIONNELLE - Par défaut 10, mais peut être modifiée ou supprimée
+        $limit = $args['limit'] ?? 10;
+        if ($limit > 0) {
+            $dbQuery->limit($limit);
+        }
+        
+        return $dbQuery->pluck('name')->toArray();
+    }
+
+    /**
+     * Recherche tous les produits avec des options de filtrage et de tri
+     */
+    public function searchAllProducts($root, array $args)
+    {
+        $query = ProductCBD::query()
+            ->with(['category', 'categories'])
+            ->orderByDesc('created_at');
+
+        // Recherche textuelle
+        if (isset($args['query']) && !empty($args['query'])) {
+            $searchTerm = $args['query'];
+            $query->where(function ($q) use ($searchTerm) {
+                $q->where('name', 'like', "%{$searchTerm}%")
+                  ->orWhere('description', 'like', "%{$searchTerm}%");
+            });
+            
+            // Tri par pertinence
+            $query->orderByRaw("CASE 
+                WHEN name LIKE ? THEN 1 
+                WHEN name LIKE ? THEN 2 
+                ELSE 3 
+            END", ["{$searchTerm}%", "%{$searchTerm}%"])
+            ->orderByDesc('created_at');
+        }
+
+        // Filtres
+        if (isset($args['category_id']) && !empty($args['category_id'])) {
+            $query->where('category_id', $args['category_id']);
+        }
+
+        if (isset($args['min_price'])) {
+            $query->where('price', '>=', $args['min_price']);
+        }
+
+        if (isset($args['max_price'])) {
+            $query->where('price', '<=', $args['max_price']);
+        }
+
+        if (isset($args['in_stock']) && $args['in_stock']) {
+            $query->where('stock', '>', 0);
+        }
+
+        // 🔥 RETOURNE TOUS LES RÉSULTATS (sans limitation)
+        return $query->get();
     }
 }

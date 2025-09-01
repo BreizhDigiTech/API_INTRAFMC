@@ -8,6 +8,7 @@
 #import ./../app/Modules/Cart/GraphQL/schema.graphql
 #import ./../app/Modules/Order/GraphQL/schema.graphql
 #import ./../app/Modules/Statistics/GraphQL/schema.graphql
+#import ./../app/Modules/FinancialRecap/GraphQL/schema.graphql
 #import ./../app/GraphQL/schema-optimizations.graphql
 
 "A datetime string with format `Y-m-d H:i:s`, e.g. `2018-05-23 13:43:32`."
