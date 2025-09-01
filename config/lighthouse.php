@@ -241,7 +241,7 @@ return [
     */
 
     'security' => [
-        'max_query_complexity' => env('LIGHTHOUSE_MAX_QUERY_COMPLEXITY', 1000),
+        'max_query_complexity' => env('LIGHTHOUSE_MAX_QUERY_COMPLEXITY', 10000),
         'max_query_depth' => env('LIGHTHOUSE_MAX_QUERY_DEPTH', 10),
         'disable_introspection' => (bool) env('LIGHTHOUSE_SECURITY_DISABLE_INTROSPECTION', env('APP_ENV') === 'production')
             ? GraphQL\Validator\Rules\DisableIntrospection::ENABLED
@@ -269,7 +269,7 @@ return [
          * Limit the maximum amount of items that clients can request from paginated lists.
          * Setting this to `null` means the count is unrestricted.
          */
-        'max_count' => 100,
+        'max_count' => null, // AUCUNE LIMITATION
     ],
 
     /*

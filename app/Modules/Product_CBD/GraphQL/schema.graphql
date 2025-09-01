@@ -4,9 +4,17 @@ extend type Query {
     page: Int
     name: String @where(operator: "like")
     category_id: ID @eq
-  ): [ProductCBD!]! @paginate(defaultCount: 20)
+  ): [ProductCBD!]! @paginate(defaultCount: 20) @orderBy(column: "created_at", direction: DESC)
   
   productCBD(id: ID! @eq): ProductCBD @find
+
+  # 🚀 NOUVELLE REQUÊTE : Récupérer TOUS les produits (sans limitation)
+  allProductsCBD(
+    name: String @where(operator: "like")
+    category_id: ID @eq
+  ): [ProductCBD!]! 
+    @field(resolver: "App\\Modules\\Product_CBD\\GraphQL\\Queries\\ProductCBDQuery@allProducts")
+    @orderBy(column: "created_at", direction: DESC)
 
   # Recherche avancée de produits
   searchProducts(
@@ -34,7 +42,7 @@ extend type Query {
   products(
     first: Int = 20
     page: Int
-  ): [ProductCBD!]! @paginate(defaultCount: 20)
+  ): [ProductCBD!]! @paginate(defaultCount: 20) @orderBy(column: "created_at", direction: DESC)
 
   product(id: ID! @eq): ProductCBD @find
   

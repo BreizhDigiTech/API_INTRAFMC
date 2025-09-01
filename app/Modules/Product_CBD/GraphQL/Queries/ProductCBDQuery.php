@@ -31,4 +31,26 @@ class ProductCBDQuery
 
         return $product;
     }
+
+    /**
+     * Récupérer TOUS les produits sans pagination ni limitation
+     */
+    public function allProducts($root, array $args)
+    {
+        AuthHelper::ensureAuthenticated();
+
+        $query = ProductCBD::query();
+
+        // Filtres optionnels
+        if (isset($args['name']) && !empty($args['name'])) {
+            $query->where('name', 'like', '%' . $args['name'] . '%');
+        }
+
+        if (isset($args['category_id']) && !empty($args['category_id'])) {
+            $query->where('category_id', $args['category_id']);
+        }
+
+        // AUCUNE LIMITATION - récupère TOUS les produits
+        return $query->orderByDesc('created_at')->get();
+    }
 }

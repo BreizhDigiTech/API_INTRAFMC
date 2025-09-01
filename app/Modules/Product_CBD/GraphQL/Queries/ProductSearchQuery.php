@@ -44,17 +44,18 @@ class ProductSearchQuery
             $query->where('stock', '>', 0);
         }
         
-        // Tri par pertinence (nom exact en premier, puis alphabétique)
+        // Tri par pertinence (nom exact en premier, puis alphabétique, puis par date de création)
         if (isset($args['query']) && !empty($args['query']) && trim($args['query']) !== '') {
             $query->orderByRaw("
                 CASE 
                     WHEN name = ? THEN 1
                     WHEN name LIKE ? THEN 2
                     ELSE 3
-                END, name ASC
+                END, name ASC, created_at DESC
             ", [$args['query'], $args['query'] . '%']);
         } else {
-            $query->orderBy('name');
+            // Pas de recherche textuelle : trier par date de création (plus récent en premier)
+            $query->orderByDesc('created_at');
         }
         
         // Pour les tests et queries simples, retourner directement les résultats
@@ -75,7 +76,7 @@ class ProductSearchQuery
                     WHEN name = ? THEN 1
                     WHEN name LIKE ? THEN 2
                     ELSE 3
-                END, name ASC
+                END, name ASC, created_at DESC
             ", [$name, $name . '%'])
             ->limit($args['limit'] ?? 10)
             ->get();
@@ -95,6 +96,7 @@ class ProductSearchQuery
         return ProductCBD::select('name')
             ->where('name', 'like', $query . '%')
             ->distinct()
+            ->orderByDesc('created_at') // Suggestions des produits les plus récents d'abord
             ->limit(5)
             ->pluck('name')
             ->toArray();
